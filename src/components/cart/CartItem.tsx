@@ -14,6 +14,8 @@ interface CartItemProps {
   discountPercentage: number | null;
   quantity: number;
   stockQuantity: number;
+  variantName?: string;
+  priceAdjustment?: number;
   onUpdateQuantity: (id: string, quantity: number) => void;
   onRemove: (id: string) => void;
 }
@@ -28,12 +30,15 @@ export function CartItem({
   discountPercentage,
   quantity,
   stockQuantity,
+  variantName,
+  priceAdjustment = 0,
   onUpdateQuantity,
   onRemove,
 }: CartItemProps) {
+  const adjustedPrice = price + priceAdjustment;
   const finalPrice = discountPercentage
-    ? price * (1 - discountPercentage / 100)
-    : price;
+    ? adjustedPrice * (1 - discountPercentage / 100)
+    : adjustedPrice;
   const subtotal = finalPrice * quantity;
 
   return (
@@ -57,6 +62,12 @@ export function CartItem({
             >
               {productName}
             </Link>
+            
+            {variantName && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Variant: {variantName}
+              </p>
+            )}
 
             <div className="mt-2 space-y-1">
               {discountPercentage && (

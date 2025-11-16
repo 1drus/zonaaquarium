@@ -14,6 +14,7 @@ import { Loader2, ShoppingBag } from 'lucide-react';
 interface CartItemData {
   id: string;
   product_id: string;
+  variant_id: string | null;
   quantity: number;
   product: {
     id: string;
@@ -27,6 +28,12 @@ interface CartItemData {
       is_primary: boolean;
     }>;
   };
+  product_variants: {
+    id: string;
+    variant_name: string;
+    price_adjustment: number;
+    stock_quantity: number;
+  } | null;
 }
 
 const Cart = () => {
@@ -53,6 +60,7 @@ const Cart = () => {
       .select(`
         id,
         product_id,
+        variant_id,
         quantity,
         product:products!inner(
           id,
@@ -62,6 +70,12 @@ const Cart = () => {
           discount_percentage,
           stock_quantity,
           product_images!inner(image_url, is_primary)
+        ),
+        product_variants(
+          id,
+          variant_name,
+          price_adjustment,
+          stock_quantity
         )
       `)
       .eq('user_id', user.id)
@@ -121,9 +135,18 @@ const Cart = () => {
 
   const calculateSubtotal = () => {
     return cartItems.reduce((sum, item) => {
-      const price = item.product.discount_percentage
-        ? item.product.price * (1 - item.product.discount_percentage / 100)
-        : item.product.price;
+      let price = item.product.price;
+      
+      // Add variant price adjustment if exists
+      if (item.product_variants) {
+        price += item.product_variants.price_adjustment;
+      }
+      
+      // Apply product discount
+      if (item.product.discount_percentage) {
+        price = price * (1 - item.product.discount_percentage / 100);
+      }
+      
       return sum + price * item.quantity;
     }, 0);
   };
@@ -190,7 +213,9 @@ const Cart = () => {
                   price={item.product.price}
                   discountPercentage={item.product.discount_percentage}
                   quantity={item.quantity}
-                  stockQuantity={item.product.stock_quantity}
+                  stockQuantity={item.product_variants?.stock_quantity || item.product.stock_quantity}
+                  variantName={item.product_variants?.variant_name}
+                  priceAdjustment={item.product_variants?.price_adjustment || 0}
                   onUpdateQuantity={handleUpdateQuantity}
                   onRemove={handleRemoveItem}
                 />
