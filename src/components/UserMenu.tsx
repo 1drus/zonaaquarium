@@ -10,12 +10,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User as UserIcon, LogOut, Package } from 'lucide-react';
+import { User as UserIcon, LogOut, Package, Shield } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export function UserMenu() {
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut, loading, isAdmin } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
 
@@ -86,6 +86,17 @@ export function UserMenu() {
             <span>Pesanan Saya</span>
           </Link>
         </DropdownMenuItem>
+        {isAdmin && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to="/admin" className="cursor-pointer">
+                <Shield className="mr-2 h-4 w-4" />
+                <span>Admin Dashboard</span>
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={signOut} className="cursor-pointer text-destructive">
           <LogOut className="mr-2 h-4 w-4" />
