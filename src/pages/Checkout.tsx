@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 import { CheckoutStepper } from '@/components/checkout/CheckoutStepper';
 import { AddressStep } from '@/components/checkout/AddressStep';
 import { ShippingStep } from '@/components/checkout/ShippingStep';
 import { PaymentStep } from '@/components/checkout/PaymentStep';
 import { OrderSummary } from '@/components/checkout/OrderSummary';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 
 interface CartItem {
   id: string;
@@ -236,91 +238,99 @@ export default function Checkout() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Memuat...</p>
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="container max-w-4xl">
-        <Button
-          variant="ghost"
-          className="mb-6"
-          onClick={() => navigate('/cart')}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Kembali ke Keranjang
-        </Button>
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-1 bg-background py-8">
+        <div className="container max-w-4xl">
+          <Button
+            variant="ghost"
+            className="mb-6"
+            onClick={() => navigate('/cart')}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Kembali ke Keranjang
+          </Button>
 
-        <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+          <h1 className="text-3xl font-bold mb-8">Checkout</h1>
 
-        <CheckoutStepper currentStep={currentStep} />
+          <CheckoutStepper currentStep={currentStep} />
 
-        <div className="mt-8">
-          {currentStep === 1 && (
-            <AddressStep
-              selectedAddress={selectedAddress}
-              onSelectAddress={setSelectedAddress}
-            />
-          )}
+          <div className="mt-8">
+            {currentStep === 1 && (
+              <AddressStep
+                selectedAddress={selectedAddress}
+                onSelectAddress={setSelectedAddress}
+              />
+            )}
 
-          {currentStep === 2 && (
-            <ShippingStep
-              selectedAddress={selectedAddress}
-              shippingMethod={shippingMethod}
-              shippingCost={shippingCost}
-              onSelectShipping={(method, cost) => {
-                setShippingMethod(method);
-                setShippingCost(cost);
-              }}
-            />
-          )}
+            {currentStep === 2 && (
+              <ShippingStep
+                selectedAddress={selectedAddress}
+                shippingMethod={shippingMethod}
+                shippingCost={shippingCost}
+                onSelectShipping={(method, cost) => {
+                  setShippingMethod(method);
+                  setShippingCost(cost);
+                }}
+              />
+            )}
 
-          {currentStep === 3 && (
-            <PaymentStep
-              paymentMethod={paymentMethod}
-              onSelectPayment={setPaymentMethod}
-            />
-          )}
+            {currentStep === 3 && (
+              <PaymentStep
+                paymentMethod={paymentMethod}
+                onSelectPayment={setPaymentMethod}
+              />
+            )}
 
-          {currentStep === 4 && (
-            <OrderSummary
-              cartItems={cartItems}
-              selectedAddress={selectedAddress}
-              shippingMethod={shippingMethod}
-              shippingCost={shippingCost}
-              paymentMethod={paymentMethod}
-              notes={notes}
-              onNotesChange={setNotes}
-              subtotal={calculateSubtotal()}
-            />
-          )}
+            {currentStep === 4 && (
+              <OrderSummary
+                cartItems={cartItems}
+                selectedAddress={selectedAddress}
+                shippingMethod={shippingMethod}
+                shippingCost={shippingCost}
+                paymentMethod={paymentMethod}
+                notes={notes}
+                onNotesChange={setNotes}
+                subtotal={calculateSubtotal()}
+              />
+            )}
+          </div>
+
+          <div className="flex justify-between mt-8">
+            {currentStep > 1 && (
+              <Button variant="outline" onClick={handleBack}>
+                Kembali
+              </Button>
+            )}
+            
+            {currentStep < 4 ? (
+              <Button onClick={handleNext} className="ml-auto">
+                Lanjutkan
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleSubmitOrder} 
+                disabled={submitting}
+                className="ml-auto"
+              >
+                {submitting ? 'Memproses...' : 'Buat Pesanan'}
+              </Button>
+            )}
+          </div>
         </div>
-
-        <div className="flex justify-between mt-8">
-          {currentStep > 1 && (
-            <Button variant="outline" onClick={handleBack}>
-              Kembali
-            </Button>
-          )}
-          
-          {currentStep < 4 ? (
-            <Button onClick={handleNext} className="ml-auto">
-              Lanjutkan
-            </Button>
-          ) : (
-            <Button 
-              onClick={handleSubmitOrder} 
-              disabled={submitting}
-              className="ml-auto"
-            >
-              {submitting ? 'Memproses...' : 'Buat Pesanan'}
-            </Button>
-          )}
-        </div>
-      </div>
+      </main>
+      <Footer />
     </div>
   );
 }
