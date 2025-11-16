@@ -232,12 +232,7 @@ export default function Checkout() {
 
       if (clearError) throw clearError;
 
-      toast({
-        title: 'Order berhasil dibuat',
-        description: `Order ${orderData.order_number} telah dibuat. Silakan lakukan pembayaran.`,
-      });
-
-      navigate(`/orders/${orderData.id}`);
+      navigate(`/order-success/${orderData.id}`);
     } catch (error: any) {
       toast({
         variant: 'destructive',
