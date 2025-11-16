@@ -12,7 +12,7 @@ interface ShippingStepProps {
   selectedAddress: Address | null;
   shippingMethod: string;
   shippingCost: number;
-  onSelectShipping: (method: string, cost: number) => void;
+  onSelectShipping: (id: string, name: string, cost: number) => void;
 }
 
 const shippingOptions = [
@@ -85,7 +85,7 @@ export function ShippingStep({
         onValueChange={(value) => {
           const option = shippingOptions.find(opt => opt.id === value);
           if (option) {
-            onSelectShipping(option.name, option.cost);
+            onSelectShipping(option.id, option.name, option.cost);
           }
         }}
       >

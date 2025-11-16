@@ -70,6 +70,7 @@ export default function Checkout() {
   // Form data
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [shippingMethod, setShippingMethod] = useState('');
+  const [shippingMethodName, setShippingMethodName] = useState('');
   const [shippingCost, setShippingCost] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [notes, setNotes] = useState('');
@@ -186,7 +187,7 @@ export default function Checkout() {
           recipient_phone: selectedAddress.phone,
           shipping_address: `${selectedAddress.address_line}, ${selectedAddress.kelurahan}, ${selectedAddress.kecamatan}, ${selectedAddress.city}, ${selectedAddress.province} ${selectedAddress.postal_code}`,
           shipping_address_id: selectedAddress.id,
-          shipping_method: shippingMethod,
+          shipping_method: shippingMethodName,
           shipping_cost: shippingCost,
           subtotal: subtotal,
           discount_amount: voucherDiscount,
@@ -273,6 +274,12 @@ export default function Checkout() {
     }
   };
 
+  const handleSelectShipping = (id: string, name: string, cost: number) => {
+    setShippingMethod(id);
+    setShippingMethodName(name);
+    setShippingCost(cost);
+  };
+
   const handleNext = () => {
     if (currentStep === 1 && !selectedAddress) {
       toast({
@@ -348,10 +355,7 @@ export default function Checkout() {
                 selectedAddress={selectedAddress}
                 shippingMethod={shippingMethod}
                 shippingCost={shippingCost}
-                onSelectShipping={(method, cost) => {
-                  setShippingMethod(method);
-                  setShippingCost(cost);
-                }}
+                onSelectShipping={handleSelectShipping}
               />
             )}
 
