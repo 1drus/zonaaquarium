@@ -48,6 +48,46 @@ export function OrderManagement() {
 
   useEffect(() => {
     loadOrders();
+
+    // Set up realtime subscription for all order updates (admin)
+    const channel = supabase
+      .channel('admin-orders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders'
+        },
+        (payload) => {
+          console.log('Admin: Order change detected:', payload);
+          
+          // Show toast notification for order updates
+          if (payload.eventType === 'UPDATE') {
+            const order = payload.new as any;
+            if (order.cancellation_requested) {
+              toast({
+                title: 'Permintaan Pembatalan Baru',
+                description: `Pesanan ${order.order_number} meminta pembatalan`,
+              });
+            }
+          } else if (payload.eventType === 'INSERT') {
+            const order = payload.new as any;
+            toast({
+              title: 'Pesanan Baru',
+              description: `Pesanan ${order.order_number} telah dibuat`,
+            });
+          }
+          
+          // Reload orders
+          loadOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {

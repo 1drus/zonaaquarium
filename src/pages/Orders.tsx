@@ -35,6 +35,29 @@ export default function Orders() {
       return;
     }
     loadOrders();
+
+    // Set up realtime subscription for order updates
+    const channel = supabase
+      .channel('user-orders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Order change detected:', payload);
+          // Reload orders when any change occurs
+          loadOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, navigate]);
 
   const loadOrders = async () => {
