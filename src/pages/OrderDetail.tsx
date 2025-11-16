@@ -43,6 +43,9 @@ interface OrderDetail {
     product_name: string;
     product_slug: string;
     product_image_url: string | null;
+    variant_id: string | null;
+    variant_name: string | null;
+    variant_sku: string | null;
     price: number;
     discount_percentage: number | null;
     quantity: number;
@@ -245,6 +248,12 @@ export default function OrderDetail() {
                           />
                           <div className="flex-1">
                             <p className="font-medium">{item.product_name}</p>
+                            {item.variant_name && (
+                              <p className="text-xs text-muted-foreground">
+                                Varian: {item.variant_name}
+                                {item.variant_sku && ` (SKU: ${item.variant_sku})`}
+                              </p>
+                            )}
                             <p className="text-sm text-muted-foreground">
                               {item.quantity} x Rp {item.price.toLocaleString('id-ID')}
                               {item.discount_percentage && (

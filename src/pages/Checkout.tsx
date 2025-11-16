@@ -25,6 +25,13 @@ interface CartItem {
   id: string;
   product_id: string;
   quantity: number;
+  variant_id: string | null;
+  product_variants?: {
+    id: string;
+    variant_name: string;
+    sku: string | null;
+    price_adjustment: number | null;
+  } | null;
   products: {
     id: string;
     name: string;
@@ -87,6 +94,13 @@ export default function Checkout() {
         id,
         product_id,
         quantity,
+        variant_id,
+        product_variants (
+          id,
+          variant_name,
+          sku,
+          price_adjustment
+        ),
         products (
           id,
           name,
@@ -118,7 +132,13 @@ export default function Checkout() {
 
   const calculateSubtotal = () => {
     return cartItems.reduce((sum, item) => {
-      const price = item.products.price;
+      let price = item.products.price;
+      
+      // Add variant price adjustment if applicable
+      if (item.product_variants?.price_adjustment) {
+        price += item.product_variants.price_adjustment;
+      }
+      
       const discount = item.products.discount_percentage || 0;
       const finalPrice = price - (price * discount / 100);
       return sum + (finalPrice * item.quantity);
@@ -200,7 +220,13 @@ export default function Checkout() {
 
       // Create order items
       const orderItems = cartItems.map(item => {
-        const price = item.products.price;
+        let price = item.products.price;
+        
+        // Add variant price adjustment if applicable
+        if (item.product_variants?.price_adjustment) {
+          price += item.product_variants.price_adjustment;
+        }
+        
         const discount = item.products.discount_percentage || 0;
         const finalPrice = price - (price * discount / 100);
         const primaryImage = item.products.product_images.find(img => img.is_primary)?.image_url || null;
@@ -208,10 +234,13 @@ export default function Checkout() {
         return {
           order_id: orderData.id,
           product_id: item.product_id,
+          variant_id: item.variant_id || null,
+          variant_name: item.product_variants?.variant_name || null,
+          variant_sku: item.product_variants?.sku || null,
           product_name: item.products.name,
           product_slug: item.products.slug,
           product_image_url: primaryImage,
-          price: item.products.price,
+          price: price,
           discount_percentage: item.products.discount_percentage,
           quantity: item.quantity,
           subtotal: finalPrice * item.quantity,

@@ -7,6 +7,11 @@ import { MapPin, Truck, CreditCard, Package } from 'lucide-react';
 interface CartItem {
   id: string;
   quantity: number;
+  variant_id: string | null;
+  product_variants?: {
+    variant_name: string;
+    price_adjustment: number | null;
+  } | null;
   products: {
     name: string;
     price: number;
@@ -67,7 +72,13 @@ export function OrderSummary({
         </CardHeader>
         <CardContent className="space-y-4">
           {cartItems.map((item) => {
-            const price = item.products.price;
+            let price = item.products.price;
+            
+            // Add variant price adjustment if applicable
+            if (item.product_variants?.price_adjustment) {
+              price += item.product_variants.price_adjustment;
+            }
+            
             const discount = item.products.discount_percentage || 0;
             const finalPrice = price - (price * discount / 100);
             const primaryImage = item.products.product_images.find(img => img.is_primary)?.image_url;
@@ -81,6 +92,11 @@ export function OrderSummary({
                 />
                 <div className="flex-1">
                   <p className="font-medium">{item.products.name}</p>
+                  {item.product_variants && (
+                    <p className="text-xs text-muted-foreground">
+                      Varian: {item.product_variants.variant_name}
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground">
                     {item.quantity} x Rp {finalPrice.toLocaleString('id-ID')}
                   </p>
