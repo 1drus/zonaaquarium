@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import heroImage from "@/assets/hero-aquarium.jpg";
@@ -29,12 +30,16 @@ export const HeroSection = () => {
             akuarium Anda. Garansi kualitas terbaik.
           </p>
           <div className="flex flex-wrap gap-4">
-            <Button size="lg" className="bg-gradient-ocean hover:opacity-90 transition-opacity group">
-              Belanja Sekarang
-              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            <Button size="lg" className="bg-gradient-ocean hover:opacity-90 transition-opacity group" asChild>
+              <Link to="/products">
+                Belanja Sekarang
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10">
-              Lihat Katalog
+            <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10" asChild>
+              <Link to="/products">
+                Lihat Katalog
+              </Link>
             </Button>
           </div>
         </div>
