@@ -52,7 +52,12 @@ export const Header = ({ onSearch }: HeaderProps) => {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="hidden md:flex">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="hidden md:flex"
+            onClick={() => navigate('/wishlist')}
+          >
             <Heart className="h-5 w-5" />
           </Button>
           <div className="hidden md:flex">
