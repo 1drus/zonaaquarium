@@ -10,7 +10,8 @@ import { Separator } from '@/components/ui/separator';
 import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
 import { OrderTimeline } from '@/components/orders/OrderTimeline';
 import { PaymentProofUpload } from '@/components/orders/PaymentProofUpload';
-import { ArrowLeft, Download, Package, MapPin, Truck, CreditCard } from 'lucide-react';
+import { ReviewDialog } from '@/components/orders/ReviewDialog';
+import { ArrowLeft, Download, Package, MapPin, Truck, CreditCard, Star } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 
 interface OrderDetail {
@@ -37,6 +38,7 @@ interface OrderDetail {
   cancelled_at: string | null;
   order_items: Array<{
     id: string;
+    product_id: string;
     product_name: string;
     product_slug: string;
     product_image_url: string | null;
@@ -53,6 +55,9 @@ export default function OrderDetail() {
   const navigate = useNavigate();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [reviewedProducts, setReviewedProducts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) {
@@ -60,7 +65,24 @@ export default function OrderDetail() {
       return;
     }
     loadOrder();
+    if (order?.status === 'selesai') {
+      loadReviews();
+    }
   }, [id, user, navigate]);
+
+  const loadReviews = async () => {
+    if (!user || !id) return;
+
+    const { data } = await supabase
+      .from('reviews')
+      .select('product_id')
+      .eq('user_id', user.id)
+      .eq('order_id', id);
+
+    if (data) {
+      setReviewedProducts(new Set(data.map(r => r.product_id)));
+    }
+  };
 
   const loadOrder = async () => {
     if (!user || !id) return;
@@ -85,6 +107,17 @@ export default function OrderDetail() {
 
   const handlePrintInvoice = () => {
     window.print();
+  };
+
+  const handleReview = (item: any) => {
+    setSelectedProduct(item);
+    setReviewDialogOpen(true);
+  };
+
+  const handleReviewClose = () => {
+    setReviewDialogOpen(false);
+    setSelectedProduct(null);
+    loadReviews();
   };
 
   if (loading) {
@@ -159,31 +192,52 @@ export default function OrderDetail() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {order.order_items.map((item) => (
-                    <div key={item.id} className="flex gap-4">
-                      <img
-                        src={item.product_image_url || '/placeholder.svg'}
-                        alt={item.product_name}
-                        className="w-20 h-20 object-cover rounded"
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium">{item.product_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {item.quantity} x Rp {item.price.toLocaleString('id-ID')}
-                          {item.discount_percentage && (
-                            <span className="text-destructive ml-2">
-                              (-{item.discount_percentage}%)
-                            </span>
-                          )}
-                        </p>
+                  {order.order_items.map((item) => {
+                    const hasReviewed = reviewedProducts.has(item.product_id);
+                    return (
+                      <div key={item.id} className="space-y-3">
+                        <div className="flex gap-4">
+                          <img
+                            src={item.product_image_url || '/placeholder.svg'}
+                            alt={item.product_name}
+                            className="w-20 h-20 object-cover rounded"
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium">{item.product_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {item.quantity} x Rp {item.price.toLocaleString('id-ID')}
+                              {item.discount_percentage && (
+                                <span className="text-destructive ml-2">
+                                  (-{item.discount_percentage}%)
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold">
+                              Rp {item.subtotal.toLocaleString('id-ID')}
+                            </p>
+                          </div>
+                        </div>
+                        {order.status === 'selesai' && !hasReviewed && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleReview(item)}
+                            className="w-full"
+                          >
+                            <Star className="mr-2 h-4 w-4" />
+                            Tulis Review
+                          </Button>
+                        )}
+                        {hasReviewed && (
+                          <p className="text-sm text-muted-foreground text-center">
+                            ✓ Sudah direview
+                          </p>
+                        )}
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold">
-                          Rp {item.subtotal.toLocaleString('id-ID')}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </CardContent>
               </Card>
             </div>
@@ -280,6 +334,16 @@ export default function OrderDetail() {
         </div>
       </main>
       <Footer />
+
+      {/* Review Dialog */}
+      {selectedProduct && (
+        <ReviewDialog
+          open={reviewDialogOpen}
+          onClose={handleReviewClose}
+          orderItem={selectedProduct}
+          orderId={order!.id}
+        />
+      )}
     </div>
   );
 }
