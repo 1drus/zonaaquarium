@@ -48,7 +48,7 @@ export function useCart() {
     setCartCount(count || 0);
   };
 
-  const addToCart = async (productId: string, quantity: number = 1) => {
+  const addToCart = async (productId: string, quantity: number = 1, variantId?: string) => {
     if (!user) {
       toast({
         variant: 'destructive',
@@ -58,13 +58,20 @@ export function useCart() {
       return false;
     }
 
-    // Check if item already exists in cart
-    const { data: existingItem } = await supabase
+    // Check if item already exists in cart (with same variant if applicable)
+    const query = supabase
       .from('cart_items')
       .select('id, quantity')
       .eq('user_id', user.id)
-      .eq('product_id', productId)
-      .maybeSingle();
+      .eq('product_id', productId);
+
+    if (variantId) {
+      query.eq('variant_id', variantId);
+    } else {
+      query.is('variant_id', null);
+    }
+
+    const { data: existingItem } = await query.maybeSingle();
 
     if (existingItem) {
       // Update quantity
@@ -88,6 +95,7 @@ export function useCart() {
         .insert({
           user_id: user.id,
           product_id: productId,
+          variant_id: variantId || null,
           quantity,
         });
 

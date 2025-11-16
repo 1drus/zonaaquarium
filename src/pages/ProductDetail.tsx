@@ -8,6 +8,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProductImageGallery } from '@/components/product-detail/ProductImageGallery';
@@ -49,6 +50,16 @@ interface Product {
   } | null;
 }
 
+interface ProductVariant {
+  id: string;
+  variant_name: string;
+  size: string | null;
+  color: string | null;
+  price_adjustment: number;
+  stock_quantity: number;
+  is_active: boolean;
+}
+
 export default function ProductDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -61,6 +72,8 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
 
   useEffect(() => {
     if (slug) {
@@ -70,6 +83,12 @@ export default function ProductDetail() {
       }
     }
   }, [slug, user]);
+
+  useEffect(() => {
+    if (product) {
+      loadVariants();
+    }
+  }, [product]);
 
   const loadProduct = async () => {
     const { data, error } = await supabase
@@ -104,6 +123,23 @@ export default function ProductDetail() {
     setLoading(false);
   };
 
+  const loadVariants = async () => {
+    if (!product) return;
+
+    const { data } = await supabase
+      .from('product_variants')
+      .select('*')
+      .eq('product_id', product.id)
+      .eq('is_active', true)
+      .gt('stock_quantity', 0)
+      .order('variant_name');
+
+    if (data && data.length > 0) {
+      setVariants(data);
+      setSelectedVariant(data[0]); // Select first variant by default
+    }
+  };
+
   const checkWishlist = async () => {
     if (!user || !product) return;
 
@@ -120,12 +156,41 @@ export default function ProductDetail() {
   const handleAddToCart = async () => {
     if (!product) return;
     
+    // If has variants, require variant selection
+    if (variants.length > 0 && !selectedVariant) {
+      toast({
+        variant: 'destructive',
+        title: 'Pilih variant',
+        description: 'Silakan pilih variant produk terlebih dahulu',
+      });
+      return;
+    }
+    
     setAddingToCart(true);
-    const success = await addToCart(product.id, quantity);
+    const success = await addToCart(product.id, quantity, selectedVariant?.id);
     if (success) {
       setQuantity(1);
     }
     setAddingToCart(false);
+  };
+
+  const getCurrentPrice = () => {
+    if (!product) return 0;
+    let price = product.price;
+    if (selectedVariant) {
+      price += selectedVariant.price_adjustment;
+    }
+    if (product.discount_percentage) {
+      price = price - (price * product.discount_percentage / 100);
+    }
+    return price;
+  };
+
+  const getCurrentStock = () => {
+    if (selectedVariant) {
+      return selectedVariant.stock_quantity;
+    }
+    return product?.stock_quantity || 0;
   };
 
   const handleToggleWishlist = async () => {
@@ -245,8 +310,13 @@ export default function ProductDetail() {
                   </div>
                 )}
                 <p className="text-3xl font-bold text-primary">
-                  Rp {finalPrice.toLocaleString('id-ID')}
+                  Rp {getCurrentPrice().toLocaleString('id-ID')}
                 </p>
+                {selectedVariant && selectedVariant.price_adjustment !== 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Base price + variant adjustment
+                  </p>
+                )}
               </div>
 
               {product.description && (
@@ -285,16 +355,49 @@ export default function ProductDetail() {
 
               <Separator />
 
+              {/* Variant Selection */}
+              {variants.length > 0 && (
+                <div className="space-y-3">
+                  <Label>Pilih Variant</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {variants.map((variant) => (
+                      <Button
+                        key={variant.id}
+                        type="button"
+                        variant={selectedVariant?.id === variant.id ? 'default' : 'outline'}
+                        className="h-auto py-3 flex flex-col items-start"
+                        onClick={() => setSelectedVariant(variant)}
+                        disabled={variant.stock_quantity === 0}
+                      >
+                        <span className="font-semibold">{variant.variant_name}</span>
+                        <span className="text-xs">
+                          {variant.price_adjustment !== 0 && (
+                            <span className={variant.price_adjustment > 0 ? 'text-green-600' : 'text-red-600'}>
+                              {variant.price_adjustment > 0 ? '+' : ''}
+                              Rp {Math.abs(variant.price_adjustment).toLocaleString('id-ID')}
+                            </span>
+                          )}
+                          {' • '}
+                          Stock: {variant.stock_quantity}
+                        </span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <Separator />
+
               {/* Stock & Quantity */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Stok tersedia</span>
-                  <span className={`font-semibold ${inStock ? 'text-green-600' : 'text-destructive'}`}>
-                    {inStock ? `${product.stock_quantity} unit` : 'Habis'}
+                  <span className={`font-semibold ${getCurrentStock() > 0 ? 'text-green-600' : 'text-destructive'}`}>
+                    {getCurrentStock() > 0 ? `${getCurrentStock()} unit` : 'Habis'}
                   </span>
                 </div>
 
-                {inStock && (
+                {getCurrentStock() > 0 && (
                   <div className="flex items-center gap-4">
                     <label className="text-sm font-medium">Jumlah:</label>
                     <div className="flex items-center gap-2">
@@ -310,8 +413,8 @@ export default function ProductDetail() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setQuantity(Math.min(product.max_order || product.stock_quantity || 999, quantity + 1))}
-                        disabled={quantity >= Math.min(product.max_order || 999, product.stock_quantity || 0)}
+                        onClick={() => setQuantity(Math.min(product.max_order || getCurrentStock() || 999, quantity + 1))}
+                        disabled={quantity >= Math.min(product.max_order || 999, getCurrentStock() || 0)}
                       >
                         +
                       </Button>
@@ -329,7 +432,7 @@ export default function ProductDetail() {
                   className="flex-1"
                   size="lg"
                   onClick={handleAddToCart}
-                  disabled={!inStock || addingToCart}
+                  disabled={getCurrentStock() === 0 || addingToCart}
                 >
                   <ShoppingCart className="mr-2 h-5 w-5" />
                   {addingToCart ? 'Menambahkan...' : 'Tambah ke Keranjang'}
