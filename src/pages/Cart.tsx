@@ -200,10 +200,7 @@ const Cart = () => {
 
           {/* Cart Summary */}
           <div className="lg:col-span-1">
-            <CartSummary
-              subtotal={calculateSubtotal()}
-              onCheckout={() => navigate('/checkout')}
-            />
+            <CartSummary subtotal={calculateSubtotal()} />
           </div>
         </div>
       </main>

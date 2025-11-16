@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,15 +10,14 @@ interface CartSummaryProps {
   subtotal: number;
   discount?: number;
   shippingCost?: number;
-  onCheckout: () => void;
 }
 
 export function CartSummary({
   subtotal,
   discount = 0,
   shippingCost = 0,
-  onCheckout,
 }: CartSummaryProps) {
+  const navigate = useNavigate();
   const [voucherCode, setVoucherCode] = useState('');
   const total = subtotal - discount + shippingCost;
 
@@ -73,7 +73,7 @@ export function CartSummary({
         </div>
 
         {/* Checkout Button */}
-        <Button className="w-full" size="lg" onClick={onCheckout}>
+        <Button className="w-full" size="lg" onClick={() => navigate('/checkout')}>
           <ShoppingCart className="mr-2 h-5 w-5" />
           Lanjut ke Checkout
         </Button>
