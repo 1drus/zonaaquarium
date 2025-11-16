@@ -15,6 +15,7 @@ import { PaymentVerification } from '@/components/admin/PaymentVerification';
 import { CategoryManagement } from '@/components/admin/CategoryManagement';
 import { AdvancedAnalytics } from '@/components/admin/AdvancedAnalytics';
 import { UserManagement } from '@/components/admin/UserManagement';
+import { LowStockAlerts } from '@/components/admin/LowStockAlerts';
 import { Loader2, Shield } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -66,7 +67,7 @@ export default function AdminDashboard() {
           </div>
 
           <Tabs defaultValue="stats" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-9 gap-1">
+            <TabsList className="grid w-full grid-cols-10 gap-1">
               <TabsTrigger value="stats">Statistik</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="products">Produk</TabsTrigger>
@@ -76,6 +77,7 @@ export default function AdminDashboard() {
               <TabsTrigger value="reviews">Reviews</TabsTrigger>
               <TabsTrigger value="vouchers">Voucher</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
+              <TabsTrigger value="stock">Stok</TabsTrigger>
             </TabsList>
 
             <TabsContent value="stats">
@@ -112,6 +114,10 @@ export default function AdminDashboard() {
 
             <TabsContent value="users">
               <UserManagement />
+            </TabsContent>
+
+            <TabsContent value="stock">
+              <LowStockAlerts />
             </TabsContent>
           </Tabs>
         </div>

@@ -30,6 +30,8 @@ interface Order {
   payment_status: string;
   total_amount: number;
   created_at: string;
+  cancellation_requested: boolean;
+  cancellation_request_reason: string | null;
   profiles: {
     full_name: string;
   };
@@ -75,7 +77,9 @@ export function OrderManagement() {
         payment_status,
         total_amount,
         created_at,
-        user_id
+        user_id,
+        cancellation_requested,
+        cancellation_request_reason
       `)
       .order('created_at', { ascending: false });
 
@@ -113,6 +117,7 @@ export function OrderManagement() {
       updateData.completed_at = new Date().toISOString();
     } else if (newStatus === 'dibatalkan') {
       updateData.cancelled_at = new Date().toISOString();
+      updateData.cancellation_requested = false; // Clear cancellation request
     }
 
     const { error } = await supabase
@@ -130,6 +135,31 @@ export function OrderManagement() {
       toast({
         title: 'Status diperbarui',
         description: 'Status pesanan berhasil diperbarui',
+      });
+      loadOrders();
+    }
+  };
+
+  const handleRejectCancellation = async (orderId: string) => {
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        cancellation_requested: false,
+        cancellation_request_reason: null,
+        cancellation_request_date: null,
+      })
+      .eq('id', orderId);
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Gagal menolak pembatalan',
+        description: error.message,
+      });
+    } else {
+      toast({
+        title: 'Permintaan ditolak',
+        description: 'Permintaan pembatalan telah ditolak',
       });
       loadOrders();
     }
@@ -178,6 +208,7 @@ export function OrderManagement() {
                   <TableHead>Status</TableHead>
                   <TableHead>Pembayaran</TableHead>
                   <TableHead>Tanggal</TableHead>
+                  <TableHead>Permintaan</TableHead>
                   <TableHead>Aksi</TableHead>
                 </TableRow>
               </TableHeader>
@@ -211,6 +242,40 @@ export function OrderManagement() {
                     </TableCell>
                     <TableCell>
                       {new Date(order.created_at).toLocaleDateString('id-ID')}
+                    </TableCell>
+                    <TableCell>
+                      {order.cancellation_requested ? (
+                        <div className="space-y-2 min-w-[180px]">
+                          <Badge variant="destructive" className="w-full justify-center">
+                            Pembatalan Diminta
+                          </Badge>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleUpdateStatus(order.id, 'dibatalkan')}
+                              className="flex-1 text-xs"
+                            >
+                              Setujui
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleRejectCancellation(order.id)}
+                              className="flex-1 text-xs"
+                            >
+                              Tolak
+                            </Button>
+                          </div>
+                          {order.cancellation_request_reason && (
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {order.cancellation_request_reason}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Button

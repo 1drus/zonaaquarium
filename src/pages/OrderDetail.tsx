@@ -11,7 +11,8 @@ import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
 import { OrderTimeline } from '@/components/orders/OrderTimeline';
 import { PaymentProofUpload } from '@/components/orders/PaymentProofUpload';
 import { ReviewDialog } from '@/components/orders/ReviewDialog';
-import { ArrowLeft, Download, Package, MapPin, Truck, CreditCard, Star } from 'lucide-react';
+import { CancellationRequest } from '@/components/orders/CancellationRequest';
+import { ArrowLeft, Download, Package, MapPin, Truck, CreditCard, Star, XCircle } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 
 interface OrderDetail {
@@ -37,6 +38,8 @@ interface OrderDetail {
   shipped_at: string | null;
   completed_at: string | null;
   cancelled_at: string | null;
+  cancellation_requested: boolean;
+  cancellation_request_reason: string | null;
   order_items: Array<{
     id: string;
     product_id: string;
@@ -62,6 +65,7 @@ export default function OrderDetail() {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [reviewedProducts, setReviewedProducts] = useState<Set<string>>(new Set());
+  const [cancellationDialogOpen, setCancellationDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -174,6 +178,29 @@ export default function OrderDetail() {
           <div className="grid md:grid-cols-3 gap-6">
             {/* Main Content */}
             <div className="md:col-span-2 space-y-6">
+              {/* Cancellation Request Card */}
+              {order.cancellation_requested && (
+                <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2 text-orange-800 dark:text-orange-200">
+                      <XCircle className="h-5 w-5" />
+                      Permintaan Pembatalan
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-orange-700 dark:text-orange-300 mb-2 font-medium">
+                      Status: Menunggu persetujuan admin
+                    </p>
+                    <p className="text-sm text-orange-800 dark:text-orange-200">
+                      Alasan: {order.cancellation_request_reason}
+                    </p>
+                    <p className="text-xs text-orange-600 dark:text-orange-400 mt-3">
+                      Admin akan meninjau permintaan Anda dalam 1-2 hari kerja.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Payment Proof Upload */}
               {order.status === 'menunggu_pembayaran' && order.payment_status === 'pending' && (
                 <PaymentProofUpload
@@ -379,6 +406,19 @@ export default function OrderDetail() {
                 <Download className="mr-2 h-4 w-4" />
                 Cetak Invoice
               </Button>
+
+              {/* Cancel Order Button */}
+              {!order.cancellation_requested && 
+               (order.status === 'menunggu_pembayaran' || order.status === 'diproses') && (
+                <Button 
+                  variant="destructive" 
+                  className="w-full print:hidden" 
+                  onClick={() => setCancellationDialogOpen(true)}
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Batalkan Pesanan
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -394,6 +434,15 @@ export default function OrderDetail() {
           orderId={order!.id}
         />
       )}
+
+      {/* Cancellation Request Dialog */}
+      <CancellationRequest
+        open={cancellationDialogOpen}
+        onClose={() => setCancellationDialogOpen(false)}
+        orderId={order.id}
+        orderNumber={order.order_number}
+        onSuccess={loadOrder}
+      />
     </div>
   );
 }
