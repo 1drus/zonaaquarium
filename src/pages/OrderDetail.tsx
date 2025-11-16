@@ -76,7 +76,37 @@ export default function OrderDetail() {
     if (order?.status === 'selesai') {
       loadReviews();
     }
-  }, [id, user, navigate]);
+
+    // Set up realtime subscription for this specific order
+    if (id) {
+      const channel = supabase
+        .channel(`order-${id}-changes`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'orders',
+            filter: `id=eq.${id}`
+          },
+          (payload) => {
+            console.log('Order detail change detected:', payload);
+            loadOrder();
+            
+            // Show notification for status changes
+            const newOrder = payload.new as any;
+            if (newOrder.status !== order?.status) {
+              // Status changed notification will be shown when order reloads
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [id, user, navigate, order?.status]);
 
   const loadReviews = async () => {
     if (!user || !id) return;
