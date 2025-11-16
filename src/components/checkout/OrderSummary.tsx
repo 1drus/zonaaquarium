@@ -35,6 +35,8 @@ interface OrderSummaryProps {
   notes: string;
   onNotesChange: (notes: string) => void;
   subtotal: number;
+  voucherDiscount?: number;
+  voucherCode?: string;
 }
 
 export function OrderSummary({
@@ -46,8 +48,10 @@ export function OrderSummary({
   notes,
   onNotesChange,
   subtotal,
+  voucherDiscount = 0,
+  voucherCode,
 }: OrderSummaryProps) {
-  const total = subtotal + shippingCost;
+  const total = subtotal - voucherDiscount + shippingCost;
 
   return (
     <div className="space-y-6">
@@ -164,6 +168,12 @@ export function OrderSummary({
             <span className="text-muted-foreground">Subtotal Produk</span>
             <span>Rp {subtotal.toLocaleString('id-ID')}</span>
           </div>
+          {voucherDiscount > 0 && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span>Diskon Voucher {voucherCode && `(${voucherCode})`}</span>
+              <span>-Rp {voucherDiscount.toLocaleString('id-ID')}</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Ongkos Kirim</span>
             <span>Rp {shippingCost.toLocaleString('id-ID')}</span>
