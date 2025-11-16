@@ -234,6 +234,9 @@ export type Database = {
         Row: {
           admin_notes: string | null
           cancellation_reason: string | null
+          cancellation_request_date: string | null
+          cancellation_request_reason: string | null
+          cancellation_requested: boolean | null
           cancelled_at: string | null
           completed_at: string | null
           created_at: string
@@ -262,6 +265,9 @@ export type Database = {
         Insert: {
           admin_notes?: string | null
           cancellation_reason?: string | null
+          cancellation_request_date?: string | null
+          cancellation_request_reason?: string | null
+          cancellation_requested?: boolean | null
           cancelled_at?: string | null
           completed_at?: string | null
           created_at?: string
@@ -290,6 +296,9 @@ export type Database = {
         Update: {
           admin_notes?: string | null
           cancellation_reason?: string | null
+          cancellation_request_date?: string | null
+          cancellation_request_reason?: string | null
+          cancellation_requested?: boolean | null
           cancelled_at?: string | null
           completed_at?: string | null
           created_at?: string
