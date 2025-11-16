@@ -31,6 +31,7 @@ interface OrderDetail {
   discount_amount: number | null;
   total_amount: number;
   notes: string | null;
+  admin_notes: string | null;
   created_at: string;
   paid_at: string | null;
   shipped_at: string | null;
@@ -178,6 +179,46 @@ export default function OrderDetail() {
                   paymentDeadline={order.payment_deadline}
                   onUploadSuccess={loadOrder}
                 />
+              )}
+
+              {/* Admin Notes - Payment Rejected */}
+              {order.admin_notes && order.payment_status === 'failed' && (
+                <Card className="border-red-200 bg-red-50 dark:bg-red-950">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2 text-red-800 dark:text-red-200">
+                      <CreditCard className="h-5 w-5" />
+                      Pembayaran Ditolak
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-red-700 dark:text-red-300 mb-2 font-medium">
+                      Alasan penolakan:
+                    </p>
+                    <p className="text-sm text-red-800 dark:text-red-200">
+                      {order.admin_notes}
+                    </p>
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-3">
+                      Silakan upload ulang bukti pembayaran yang valid.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Admin Notes - General */}
+              {order.admin_notes && order.payment_status !== 'failed' && (
+                <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2 text-blue-800 dark:text-blue-200">
+                      <Package className="h-5 w-5" />
+                      Catatan dari Admin
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                      {order.admin_notes}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Order Timeline */}
