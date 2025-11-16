@@ -1,10 +1,15 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Heart, Star } from "lucide-react";
+import { ShoppingCart, Heart, Star, Loader2 } from "lucide-react";
+import { useCart } from "@/hooks/useCart";
 
 interface ProductCardProps {
+  id?: string;
   name: string;
+  slug?: string;
   price: number;
   originalPrice?: number;
   image: string;
@@ -17,7 +22,9 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({
+  id,
   name,
+  slug,
   price,
   originalPrice,
   image,
@@ -28,14 +35,28 @@ export const ProductCard = ({
   isNew,
   discount,
 }: ProductCardProps) => {
+  const [adding, setAdding] = useState(false);
+  const { addToCart } = useCart();
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!id || !inStock) return;
+    
+    setAdding(true);
+    await addToCart(id);
+    setAdding(false);
+  };
+
+  const productUrl = slug ? `/products/${slug}` : '#';
   return (
-    <Card className="group overflow-hidden border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-medium">
-      <div className="relative aspect-square overflow-hidden bg-muted/30">
-        <img
-          src={image}
-          alt={name}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-        />
+    <Link to={productUrl}>
+      <Card className="group overflow-hidden border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-medium">
+        <div className="relative aspect-square overflow-hidden bg-muted/30">
+          <img
+            src={image}
+            alt={name}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          />
         
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-2">
@@ -97,12 +118,23 @@ export const ProductCard = ({
         {/* Add to Cart Button */}
         <Button
           className="w-full bg-gradient-ocean hover:opacity-90 transition-opacity"
-          disabled={!inStock}
+          disabled={!inStock || adding}
+          onClick={handleAddToCart}
         >
-          <ShoppingCart className="mr-2 h-4 w-4" />
-          {inStock ? 'Tambah ke Keranjang' : 'Stok Habis'}
+          {adding ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Menambahkan...
+            </>
+          ) : (
+            <>
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              {inStock ? 'Tambah ke Keranjang' : 'Stok Habis'}
+            </>
+          )}
         </Button>
       </div>
     </Card>
+    </Link>
   );
 };

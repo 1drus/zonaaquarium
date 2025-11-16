@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { UserMenu } from "@/components/UserMenu";
+import { useCart } from "@/hooks/useCart";
 
 interface HeaderProps {
   onSearch?: (search: string) => void;
@@ -13,6 +14,7 @@ interface HeaderProps {
 export const Header = ({ onSearch }: HeaderProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+  const { cartCount } = useCart();
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -56,11 +58,18 @@ export const Header = ({ onSearch }: HeaderProps) => {
           <div className="hidden md:flex">
             <UserMenu />
           </div>
-          <Button variant="ghost" size="icon" className="relative">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="relative"
+            onClick={() => navigate('/cart')}
+          >
             <ShoppingCart className="h-5 w-5" />
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-accent text-accent-foreground text-xs">
-              3
-            </Badge>
+            {cartCount > 0 && (
+              <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-accent text-accent-foreground text-xs">
+                {cartCount}
+              </Badge>
+            )}
           </Button>
           <Button variant="ghost" size="icon" className="md:hidden">
             <Menu className="h-5 w-5" />
