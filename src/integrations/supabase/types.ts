@@ -766,6 +766,45 @@ export type Database = {
         }
         Relationships: []
       }
+      tier_exclusive_vouchers: {
+        Row: {
+          created_at: string | null
+          description: string
+          discount_type: string
+          discount_value: number
+          id: string
+          max_discount: number | null
+          min_purchase: number | null
+          tier_name: string
+          valid_days: number
+          voucher_code_prefix: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          discount_type: string
+          discount_value: number
+          id?: string
+          max_discount?: number | null
+          min_purchase?: number | null
+          tier_name: string
+          valid_days?: number
+          voucher_code_prefix: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          max_discount?: number | null
+          min_purchase?: number | null
+          tier_name?: string
+          valid_days?: number
+          voucher_code_prefix?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -786,6 +825,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_tier_vouchers: {
+        Row: {
+          assigned_at: string | null
+          id: string
+          is_notified: boolean | null
+          tier_name: string
+          user_id: string
+          voucher_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          id?: string
+          is_notified?: boolean | null
+          tier_name: string
+          user_id: string
+          voucher_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          id?: string
+          is_notified?: boolean | null
+          tier_name?: string
+          user_id?: string
+          voucher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_tier_vouchers_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       voucher_usage: {
         Row: {
@@ -917,8 +991,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_tier_voucher: {
+        Args: { _tier_name: string; _user_id: string }
+        Returns: string
+      }
       cleanup_expired_verification_codes: { Args: never; Returns: undefined }
       generate_order_number: { Args: never; Returns: string }
+      generate_unique_voucher_code: {
+        Args: { prefix: string }
+        Returns: string
+      }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: {
