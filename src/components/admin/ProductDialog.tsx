@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProductVariants } from './ProductVariants';
+import { ImagePlus, X } from 'lucide-react';
 
 interface ProductDialogProps {
   open: boolean;
@@ -31,6 +32,9 @@ export function ProductDialog({ open, onClose, product }: ProductDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<Array<{ id: string; image_url: string; is_primary: boolean }>>([]);
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -78,6 +82,7 @@ export function ProductDialog({ open, onClose, product }: ProductDialogProps) {
         min_order: product.min_order?.toString() || '1',
         max_order: product.max_order?.toString() || '',
       });
+      loadProductImages(product.id);
     } else {
       resetForm();
     }
@@ -92,6 +97,18 @@ export function ProductDialog({ open, onClose, product }: ProductDialogProps) {
 
     if (data) {
       setCategories(data);
+    }
+  };
+
+  const loadProductImages = async (productId: string) => {
+    const { data } = await supabase
+      .from('product_images')
+      .select('id, image_url, is_primary')
+      .eq('product_id', productId)
+      .order('display_order');
+    
+    if (data) {
+      setExistingImages(data);
     }
   };
 
@@ -116,6 +133,8 @@ export function ProductDialog({ open, onClose, product }: ProductDialogProps) {
       min_order: '1',
       max_order: '',
     });
+    setImageFiles([]);
+    setExistingImages([]);
   };
 
   const generateSlug = (name: string) => {
@@ -123,6 +142,77 @@ export function ProductDialog({ open, onClose, product }: ProductDialogProps) {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setImageFiles(prev => [...prev, ...files]);
+    }
+  };
+
+  const removeNewImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = async (imageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('product_images')
+        .delete()
+        .eq('id', imageId);
+
+      if (error) throw error;
+
+      setExistingImages(prev => prev.filter(img => img.id !== imageId));
+      toast({
+        title: 'Gambar dihapus',
+        description: 'Gambar berhasil dihapus',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Gagal menghapus gambar',
+        description: error.message,
+      });
+    }
+  };
+
+  const uploadImages = async (productId: string) => {
+    if (imageFiles.length === 0) return;
+
+    setUploadingImage(true);
+    try {
+      for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${productId}-${Date.now()}-${i}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(filePath);
+
+        const { error: insertError } = await supabase
+          .from('product_images')
+          .insert({
+            product_id: productId,
+            image_url: publicUrl,
+            is_primary: existingImages.length === 0 && i === 0,
+            display_order: existingImages.length + i,
+          });
+
+        if (insertError) throw insertError;
+      }
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -153,21 +243,26 @@ export function ProductDialog({ open, onClose, product }: ProductDialogProps) {
         max_order: formData.max_order ? Number(formData.max_order) : null,
       };
 
-      let error;
+      let productId: string;
       if (product) {
         const result = await supabase
           .from('products')
           .update(productData)
           .eq('id', product.id);
-        error = result.error;
+        if (result.error) throw result.error;
+        productId = product.id;
       } else {
         const result = await supabase
           .from('products')
-          .insert(productData);
-        error = result.error;
+          .insert(productData)
+          .select()
+          .single();
+        if (result.error) throw result.error;
+        productId = result.data.id;
       }
 
-      if (error) throw error;
+      // Upload images
+      await uploadImages(productId);
 
       toast({
         title: product ? 'Produk diperbarui' : 'Produk ditambahkan',
@@ -211,6 +306,59 @@ export function ProductDialog({ open, onClose, product }: ProductDialogProps) {
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
               />
+            </div>
+
+            <div className="col-span-2">
+              <Label>Gambar Produk</Label>
+              <div className="space-y-2">
+                <div className="flex gap-2 flex-wrap">
+                  {existingImages.map((img) => (
+                    <div key={img.id} className="relative w-24 h-24 border rounded-lg overflow-hidden">
+                      <img src={img.image_url} alt="Product" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeExistingImage(img.id)}
+                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                      {img.is_primary && (
+                        <span className="absolute bottom-1 left-1 bg-primary text-primary-foreground text-xs px-1 rounded">
+                          Utama
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {imageFiles.map((file, index) => (
+                    <div key={index} className="relative w-24 h-24 border rounded-lg overflow-hidden">
+                      <img src={URL.createObjectURL(file)} alt="New" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeNewImage(index)}
+                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageSelect}
+                    className="hidden"
+                    id="image-upload-edit"
+                  />
+                  <Label htmlFor="image-upload-edit" className="cursor-pointer">
+                    <div className="border-2 border-dashed rounded-lg p-4 text-center hover:border-primary transition-colors">
+                      <ImagePlus className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">Klik untuk upload gambar</p>
+                    </div>
+                  </Label>
+                </div>
+              </div>
             </div>
 
             <div className="col-span-2">
@@ -313,6 +461,42 @@ export function ProductDialog({ open, onClose, product }: ProductDialogProps) {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
                 />
+              </div>
+
+              <div className="col-span-2">
+                <Label>Gambar Produk</Label>
+                <div className="space-y-2">
+                  <div className="flex gap-2 flex-wrap">
+                    {imageFiles.map((file, index) => (
+                      <div key={index} className="relative w-24 h-24 border rounded-lg overflow-hidden">
+                        <img src={URL.createObjectURL(file)} alt="New" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeNewImage(index)}
+                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageSelect}
+                      className="hidden"
+                      id="image-upload"
+                    />
+                    <Label htmlFor="image-upload" className="cursor-pointer">
+                      <div className="border-2 border-dashed rounded-lg p-4 text-center hover:border-primary transition-colors">
+                        <ImagePlus className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Klik untuk upload gambar</p>
+                      </div>
+                    </Label>
+                  </div>
+                </div>
               </div>
 
               <div className="col-span-2">
