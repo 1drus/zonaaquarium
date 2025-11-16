@@ -96,8 +96,17 @@ export const addressSchema = z.object({
   isDefault: z.boolean().default(false)
 });
 
+// OTP verification schema
+export const otpVerificationSchema = z.object({
+  email: z.string().email({ message: "Email tidak valid" }),
+  code: z.string()
+    .length(6, { message: 'Kode harus 6 digit' })
+    .regex(/^[0-9]+$/, { message: 'Kode harus berupa angka' })
+});
+
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 export type ProfileFormData = z.infer<typeof profileSchema>;
 export type AddressFormData = z.infer<typeof addressSchema>;
+export type OTPVerificationData = z.infer<typeof otpVerificationSchema>;
