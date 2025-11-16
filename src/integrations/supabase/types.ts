@@ -157,6 +157,42 @@ export type Database = {
           },
         ]
       }
+      email_verification_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          email: string
+          expires_at: string
+          full_name: string
+          id: string
+          password_hash: string
+          phone: string
+          verified: boolean | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          email: string
+          expires_at: string
+          full_name: string
+          id?: string
+          password_hash: string
+          phone: string
+          verified?: boolean | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          full_name?: string
+          id?: string
+          password_hash?: string
+          phone?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -809,6 +845,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_verification_codes: { Args: never; Returns: undefined }
       generate_order_number: { Args: never; Returns: string }
       get_user_roles: {
         Args: { _user_id: string }
