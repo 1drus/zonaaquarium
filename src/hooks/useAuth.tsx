@@ -133,8 +133,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAdmin(false);
       toast({
         title: "Logout berhasil",
-        description: "Sampai jumpa kembali!"
+        description: "Anda telah keluar dari akun"
       });
+      // Redirect to homepage
+      window.location.href = '/';
     }
   };
 
