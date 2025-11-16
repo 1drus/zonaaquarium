@@ -12,6 +12,7 @@ import { OrderManagement } from '@/components/admin/OrderManagement';
 import { ReviewManagement } from '@/components/admin/ReviewManagement';
 import { VoucherManagement } from '@/components/admin/VoucherManagement';
 import { PaymentVerification } from '@/components/admin/PaymentVerification';
+import { CategoryManagement } from '@/components/admin/CategoryManagement';
 import { Loader2, Shield } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -63,9 +64,10 @@ export default function AdminDashboard() {
           </div>
 
           <Tabs defaultValue="stats" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="stats">Statistik</TabsTrigger>
               <TabsTrigger value="products">Produk</TabsTrigger>
+              <TabsTrigger value="categories">Kategori</TabsTrigger>
               <TabsTrigger value="orders">Pesanan</TabsTrigger>
               <TabsTrigger value="payment">Pembayaran</TabsTrigger>
               <TabsTrigger value="reviews">Reviews</TabsTrigger>
@@ -78,6 +80,10 @@ export default function AdminDashboard() {
 
             <TabsContent value="products">
               <ProductManagement />
+            </TabsContent>
+
+            <TabsContent value="categories">
+              <CategoryManagement />
             </TabsContent>
 
             <TabsContent value="orders">
