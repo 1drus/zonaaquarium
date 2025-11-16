@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -12,6 +12,14 @@ import { PaymentStep } from '@/components/checkout/PaymentStep';
 import { OrderSummary } from '@/components/checkout/OrderSummary';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+
+interface Voucher {
+  id: string;
+  code: string;
+  discount_type: string;
+  discount_value: number;
+  max_discount: number | null;
+}
 
 interface CartItem {
   id: string;
@@ -44,6 +52,7 @@ interface Address {
 export default function Checkout() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -57,6 +66,9 @@ export default function Checkout() {
   const [shippingCost, setShippingCost] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [notes, setNotes] = useState('');
+  const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(
+    location.state?.voucher || null
+  );
 
   useEffect(() => {
     if (!user) {
@@ -113,6 +125,21 @@ export default function Checkout() {
     }, 0);
   };
 
+  const calculateVoucherDiscount = (subtotal: number) => {
+    if (!appliedVoucher) return 0;
+
+    let discount = 0;
+    if (appliedVoucher.discount_type === 'percentage') {
+      discount = (subtotal * appliedVoucher.discount_value) / 100;
+      if (appliedVoucher.max_discount && discount > appliedVoucher.max_discount) {
+        discount = appliedVoucher.max_discount;
+      }
+    } else if (appliedVoucher.discount_type === 'fixed') {
+      discount = appliedVoucher.discount_value;
+    }
+    return Math.min(discount, subtotal);
+  };
+
   const handleSubmitOrder = async () => {
     if (!user || !selectedAddress) return;
 
@@ -120,7 +147,8 @@ export default function Checkout() {
     
     try {
       const subtotal = calculateSubtotal();
-      const totalAmount = subtotal + shippingCost;
+      const voucherDiscount = calculateVoucherDiscount(subtotal);
+      const totalAmount = subtotal - voucherDiscount + shippingCost;
 
       // Generate order number
       const { data: orderNumberData, error: orderNumberError } = await supabase
@@ -141,6 +169,7 @@ export default function Checkout() {
           shipping_method: shippingMethod,
           shipping_cost: shippingCost,
           subtotal: subtotal,
+          discount_amount: voucherDiscount,
           total_amount: totalAmount,
           payment_method: paymentMethod,
           notes: notes || null,
@@ -152,6 +181,22 @@ export default function Checkout() {
         .single();
 
       if (orderError) throw orderError;
+
+      // Record voucher usage if voucher was applied
+      if (appliedVoucher) {
+        const { error: voucherUsageError } = await supabase
+          .from('voucher_usage')
+          .insert({
+            voucher_id: appliedVoucher.id,
+            user_id: user.id,
+            order_id: orderData.id,
+            discount_amount: voucherDiscount,
+          });
+
+        if (voucherUsageError) {
+          console.error('Error recording voucher usage:', voucherUsageError);
+        }
+      }
 
       // Create order items
       const orderItems = cartItems.map(item => {
@@ -303,6 +348,8 @@ export default function Checkout() {
                 notes={notes}
                 onNotesChange={setNotes}
                 subtotal={calculateSubtotal()}
+                voucherDiscount={calculateVoucherDiscount(calculateSubtotal())}
+                voucherCode={appliedVoucher?.code}
               />
             )}
           </div>

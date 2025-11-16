@@ -10,6 +10,7 @@ import { AdminStats } from '@/components/admin/AdminStats';
 import { ProductManagement } from '@/components/admin/ProductManagement';
 import { OrderManagement } from '@/components/admin/OrderManagement';
 import { ReviewManagement } from '@/components/admin/ReviewManagement';
+import { VoucherManagement } from '@/components/admin/VoucherManagement';
 import { Loader2, Shield } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -61,11 +62,12 @@ export default function AdminDashboard() {
           </div>
 
           <Tabs defaultValue="stats" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="stats">Statistik</TabsTrigger>
               <TabsTrigger value="products">Produk</TabsTrigger>
               <TabsTrigger value="orders">Pesanan</TabsTrigger>
               <TabsTrigger value="reviews">Reviews</TabsTrigger>
+              <TabsTrigger value="vouchers">Voucher</TabsTrigger>
             </TabsList>
 
             <TabsContent value="stats">
@@ -82,6 +84,10 @@ export default function AdminDashboard() {
 
             <TabsContent value="reviews">
               <ReviewManagement />
+            </TabsContent>
+
+            <TabsContent value="vouchers">
+              <VoucherManagement />
             </TabsContent>
           </Tabs>
         </div>
