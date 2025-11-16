@@ -13,6 +13,7 @@ import {
 import { User as UserIcon, LogOut, Package, Shield } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { MemberBadge } from '@/components/profile/MemberBadge';
 
 export function UserMenu() {
   const { user, signOut, loading, isAdmin } = useAuth();
@@ -66,11 +67,16 @@ export function UserMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{fullName || 'User'}</p>
-            <p className="text-xs leading-none text-muted-foreground">
-              {user.email}
-            </p>
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{fullName || 'User'}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {user.email}
+                </p>
+              </div>
+              {!isAdmin && <MemberBadge />}
+            </div>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

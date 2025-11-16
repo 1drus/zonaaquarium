@@ -6,6 +6,7 @@ import { Footer } from '@/components/Footer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProfileEditForm } from '@/components/profile/ProfileEditForm';
 import { AddressList } from '@/components/profile/AddressList';
+import { MemberProgress } from '@/components/profile/MemberProgress';
 import { Loader2 } from 'lucide-react';
 
 const Profile = () => {
@@ -34,11 +35,16 @@ const Profile = () => {
       <main className="flex-1 container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6">Profil Saya</h1>
         
-        <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <Tabs defaultValue="member" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 max-w-2xl">
+            <TabsTrigger value="member">Member Progress</TabsTrigger>
             <TabsTrigger value="profile">Informasi Profil</TabsTrigger>
             <TabsTrigger value="addresses">Alamat Pengiriman</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="member" className="mt-6">
+            <MemberProgress />
+          </TabsContent>
           
           <TabsContent value="profile" className="mt-6">
             <ProfileEditForm />

@@ -193,6 +193,78 @@ export type Database = {
         }
         Relationships: []
       }
+      member_progress: {
+        Row: {
+          created_at: string | null
+          current_tier: string
+          id: string
+          order_count: number
+          tier_upgraded_at: string | null
+          total_spending: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_tier?: string
+          id?: string
+          order_count?: number
+          tier_upgraded_at?: string | null
+          total_spending?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_tier?: string
+          id?: string
+          order_count?: number
+          tier_upgraded_at?: string | null
+          total_spending?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      member_tier_config: {
+        Row: {
+          badge_color: string
+          badge_icon: string
+          created_at: string | null
+          discount_percentage: number | null
+          free_shipping_threshold: number | null
+          id: string
+          max_spending: number | null
+          min_spending: number
+          tier_level: number
+          tier_name: string
+        }
+        Insert: {
+          badge_color: string
+          badge_icon: string
+          created_at?: string | null
+          discount_percentage?: number | null
+          free_shipping_threshold?: number | null
+          id?: string
+          max_spending?: number | null
+          min_spending: number
+          tier_level: number
+          tier_name: string
+        }
+        Update: {
+          badge_color?: string
+          badge_icon?: string
+          created_at?: string | null
+          discount_percentage?: number | null
+          free_shipping_threshold?: number | null
+          id?: string
+          max_spending?: number | null
+          min_spending?: number
+          tier_level?: number
+          tier_name?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -860,6 +932,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      initialize_member_progress: { Args: never; Returns: undefined }
       remove_user_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
