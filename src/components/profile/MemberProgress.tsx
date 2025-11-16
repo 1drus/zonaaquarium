@@ -4,8 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Award, Medal, Crown, Gem, TrendingUp, ShoppingBag, Sparkles } from 'lucide-react';
+import { Award, Medal, Crown, Gem, TrendingUp, ShoppingBag, Sparkles, Gift, Copy, Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
 
 interface TierConfig {
   tier_name: string;
@@ -23,6 +26,25 @@ interface MemberProgressData {
   total_spending: number;
   order_count: number;
   tier_upgraded_at: string | null;
+}
+
+interface TierVoucher {
+  id: string;
+  voucher_id: string;
+  tier_name: string;
+  assigned_at: string;
+  is_notified: boolean;
+  vouchers: {
+    code: string;
+    description: string;
+    discount_type: string;
+    discount_value: number;
+    min_purchase: number;
+    max_discount: number | null;
+    valid_until: string;
+    usage_count: number;
+    usage_limit: number;
+  };
 }
 
 const getTierIcon = (iconName: string, className: string) => {
@@ -48,15 +70,42 @@ const getTierGradient = (tierName: string) => {
 
 export const MemberProgress = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState<MemberProgressData | null>(null);
   const [tiers, setTiers] = useState<TierConfig[]>([]);
   const [currentTierConfig, setCurrentTierConfig] = useState<TierConfig | null>(null);
   const [nextTierConfig, setNextTierConfig] = useState<TierConfig | null>(null);
+  const [tierVouchers, setTierVouchers] = useState<TierVoucher[]>([]);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
       loadMemberProgress();
+      loadTierVouchers();
+
+      // Subscribe to new vouchers
+      const channel = supabase
+        .channel('tier-vouchers-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'user_tier_vouchers',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log('New tier voucher received:', payload);
+            loadTierVouchers();
+            showVoucherNotification(payload.new as TierVoucher);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 
@@ -102,6 +151,66 @@ export const MemberProgress = () => {
       console.error('Error loading member progress:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTierVouchers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_tier_vouchers')
+        .select(`
+          *,
+          vouchers (
+            code,
+            description,
+            discount_type,
+            discount_value,
+            min_purchase,
+            max_discount,
+            valid_until,
+            usage_count,
+            usage_limit
+          )
+        `)
+        .eq('user_id', user?.id)
+        .order('assigned_at', { ascending: false });
+
+      if (error) throw error;
+      setTierVouchers(data || []);
+    } catch (error) {
+      console.error('Error loading tier vouchers:', error);
+    }
+  };
+
+  const showVoucherNotification = async (newVoucher: TierVoucher) => {
+    // Fetch voucher details
+    const { data: voucherData } = await supabase
+      .from('vouchers')
+      .select('code, description')
+      .eq('id', newVoucher.voucher_id)
+      .single();
+
+    if (voucherData) {
+      toast({
+        title: '🎉 Voucher Eksklusif Diterima!',
+        description: `Selamat! Anda mendapat voucher ${newVoucher.tier_name}: ${voucherData.code}`,
+        duration: 8000,
+      });
+    }
+  };
+
+  const copyVoucherCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      toast({
+        title: 'Kode Disalin!',
+        description: `Kode voucher ${code} telah disalin`,
+        duration: 2000,
+      });
+      setTimeout(() => setCopiedCode(null), 2000);
+    } catch (error) {
+      console.error('Error copying code:', error);
     }
   };
 
@@ -257,6 +366,81 @@ export const MemberProgress = () => {
             )}
           </ul>
         </div>
+
+        {/* Tier Exclusive Vouchers */}
+        {tierVouchers.length > 0 && (
+          <>
+            <Separator className="my-4" />
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Gift className="h-4 w-4 text-primary" />
+                <h4 className="font-semibold text-sm">Voucher Eksklusif Anda:</h4>
+              </div>
+              <div className="space-y-2">
+                {tierVouchers.map((tierVoucher) => {
+                  const isExpired = new Date(tierVoucher.vouchers.valid_until) < new Date();
+                  const isUsed = tierVoucher.vouchers.usage_count >= tierVoucher.vouchers.usage_limit;
+                  
+                  return (
+                    <div
+                      key={tierVoucher.id}
+                      className={`p-3 rounded-lg border-2 ${
+                        isExpired || isUsed
+                          ? 'border-muted bg-muted/20 opacity-60'
+                          : 'border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-xs">
+                              {tierVoucher.tier_name}
+                            </Badge>
+                            {isUsed && (
+                              <Badge variant="outline" className="text-xs">
+                                Sudah Digunakan
+                              </Badge>
+                            )}
+                            {isExpired && !isUsed && (
+                              <Badge variant="destructive" className="text-xs">
+                                Expired
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {tierVoucher.vouchers.description}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <code className="text-sm font-mono font-bold bg-background px-2 py-1 rounded">
+                              {tierVoucher.vouchers.code}
+                            </code>
+                            {!isExpired && !isUsed && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0"
+                                onClick={() => copyVoucherCode(tierVoucher.vouchers.code)}
+                              >
+                                {copiedCode === tierVoucher.vouchers.code ? (
+                                  <Check className="h-3 w-3 text-green-500" />
+                                ) : (
+                                  <Copy className="h-3 w-3" />
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Valid sampai: {new Date(tierVoucher.vouchers.valid_until).toLocaleDateString('id-ID')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* All Tiers Overview */}
         <div className="space-y-2 pt-4 border-t">
