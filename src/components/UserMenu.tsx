@@ -74,25 +74,25 @@ export function UserMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to="/profile" className="cursor-pointer">
-            <UserIcon className="mr-2 h-4 w-4" />
-            <span>Profil Saya</span>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/orders" className="cursor-pointer">
-            <Package className="mr-2 h-4 w-4" />
-            <span>Pesanan Saya</span>
-          </Link>
-        </DropdownMenuItem>
-        {isAdmin && (
+        {isAdmin ? (
+          <DropdownMenuItem asChild>
+            <Link to="/admin" className="cursor-pointer">
+              <Shield className="mr-2 h-4 w-4" />
+              <span>Admin Dashboard</span>
+            </Link>
+          </DropdownMenuItem>
+        ) : (
           <>
-            <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link to="/admin" className="cursor-pointer">
-                <Shield className="mr-2 h-4 w-4" />
-                <span>Admin Dashboard</span>
+              <Link to="/profile" className="cursor-pointer">
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>Profil Saya</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/orders" className="cursor-pointer">
+                <Package className="mr-2 h-4 w-4" />
+                <span>Pesanan Saya</span>
               </Link>
             </DropdownMenuItem>
           </>
