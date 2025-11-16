@@ -14,14 +14,14 @@ const steps = [
 
 export function CheckoutStepper({ currentStep }: CheckoutStepperProps) {
   return (
-    <div className="w-full">
+    <div className="w-full min-w-max">
       <div className="flex items-center justify-between">
         {steps.map((step, index) => (
           <div key={step.number} className="flex items-center flex-1">
             <div className="flex flex-col items-center flex-1">
               <div
                 className={cn(
-                  'w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors',
+                  'w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold transition-colors text-sm sm:text-base',
                   currentStep > step.number
                     ? 'bg-primary text-primary-foreground'
                     : currentStep === step.number
@@ -37,7 +37,7 @@ export function CheckoutStepper({ currentStep }: CheckoutStepperProps) {
               </div>
               <p
                 className={cn(
-                  'text-sm mt-2 text-center',
+                  'text-xs sm:text-sm mt-1 sm:mt-2 text-center whitespace-nowrap',
                   currentStep >= step.number
                     ? 'text-foreground font-medium'
                     : 'text-muted-foreground'
