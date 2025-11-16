@@ -327,22 +327,26 @@ export default function Checkout() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 bg-background py-8">
-        <div className="container max-w-4xl">
+      <main className="flex-1 bg-background py-4 md:py-8">
+        <div className="container max-w-4xl px-4">
           <Button
             variant="ghost"
-            className="mb-6"
+            className="mb-4 md:mb-6"
+            size="sm"
             onClick={() => navigate('/cart')}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Kembali ke Keranjang
+            <span className="hidden sm:inline">Kembali ke Keranjang</span>
+            <span className="sm:hidden">Kembali</span>
           </Button>
 
-          <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-8">Checkout</h1>
 
-          <CheckoutStepper currentStep={currentStep} />
+          <div className="mb-4 md:mb-8 overflow-x-auto -mx-4 px-4">
+            <CheckoutStepper currentStep={currentStep} />
+          </div>
 
-          <div className="mt-8">
+          <div className="mt-4 md:mt-8">
             {currentStep === 1 && (
               <AddressStep
                 selectedAddress={selectedAddress}

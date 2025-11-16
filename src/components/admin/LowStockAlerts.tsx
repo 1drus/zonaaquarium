@@ -142,7 +142,8 @@ export function LowStockAlerts() {
                 </span>
               </div>
 
-              <Table>
+              <div className="overflow-x-auto">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Tipe</TableHead>
@@ -183,6 +184,7 @@ export function LowStockAlerts() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
         </CardContent>

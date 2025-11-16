@@ -36,10 +36,10 @@ const Profile = () => {
         <h1 className="text-3xl font-bold mb-6">Profil Saya</h1>
         
         <Tabs defaultValue="member" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-2xl">
-            <TabsTrigger value="member">Member Progress</TabsTrigger>
-            <TabsTrigger value="profile">Informasi Profil</TabsTrigger>
-            <TabsTrigger value="addresses">Alamat Pengiriman</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 max-w-2xl gap-1">
+            <TabsTrigger value="member" className="text-xs sm:text-sm">Member Progress</TabsTrigger>
+            <TabsTrigger value="profile" className="text-xs sm:text-sm">Informasi Profil</TabsTrigger>
+            <TabsTrigger value="addresses" className="text-xs sm:text-sm">Alamat Pengiriman</TabsTrigger>
           </TabsList>
           
           <TabsContent value="member" className="mt-6">

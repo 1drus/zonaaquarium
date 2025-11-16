@@ -144,7 +144,7 @@ export function ProductVariants({ productId }: ProductVariantsProps) {
               <p className="text-sm mt-1">Tambahkan variant untuk size/color variations</p>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>

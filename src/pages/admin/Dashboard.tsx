@@ -67,18 +67,20 @@ export default function AdminDashboard() {
           </div>
 
           <Tabs defaultValue="stats" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-10 gap-1">
-              <TabsTrigger value="stats">Statistik</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="products">Produk</TabsTrigger>
-              <TabsTrigger value="categories">Kategori</TabsTrigger>
-              <TabsTrigger value="orders">Pesanan</TabsTrigger>
-              <TabsTrigger value="payment">Pembayaran</TabsTrigger>
-              <TabsTrigger value="reviews">Reviews</TabsTrigger>
-              <TabsTrigger value="vouchers">Voucher</TabsTrigger>
-              <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="stock">Stok</TabsTrigger>
-            </TabsList>
+            <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+              <TabsList className="inline-flex w-auto min-w-full md:grid md:w-full md:grid-cols-5 lg:grid-cols-10 gap-1">
+                <TabsTrigger value="stats" className="whitespace-nowrap">Statistik</TabsTrigger>
+                <TabsTrigger value="analytics" className="whitespace-nowrap">Analytics</TabsTrigger>
+                <TabsTrigger value="products" className="whitespace-nowrap">Produk</TabsTrigger>
+                <TabsTrigger value="categories" className="whitespace-nowrap">Kategori</TabsTrigger>
+                <TabsTrigger value="orders" className="whitespace-nowrap">Pesanan</TabsTrigger>
+                <TabsTrigger value="payment" className="whitespace-nowrap">Pembayaran</TabsTrigger>
+                <TabsTrigger value="reviews" className="whitespace-nowrap">Reviews</TabsTrigger>
+                <TabsTrigger value="vouchers" className="whitespace-nowrap">Voucher</TabsTrigger>
+                <TabsTrigger value="users" className="whitespace-nowrap">Users</TabsTrigger>
+                <TabsTrigger value="stock" className="whitespace-nowrap">Stok</TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="stats">
               <AdminStats />
