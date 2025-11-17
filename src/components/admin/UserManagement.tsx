@@ -181,47 +181,48 @@ export function UserManagement() {
               return (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors gap-4"
                 >
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-12 w-12">
+                  <div className="flex items-center gap-4 min-w-0 flex-1">
+                    <Avatar className="h-12 w-12 flex-shrink-0">
                       <AvatarImage src={user.avatar_url || undefined} />
                       <AvatarFallback>{initials}</AvatarFallback>
                     </Avatar>
 
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{user.full_name}</h3>
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold truncate">{user.full_name}</h3>
                         {isAdmin && (
-                          <Badge variant="secondary" className="bg-primary/10 text-primary">
+                          <Badge variant="secondary" className="bg-primary/10 text-primary flex-shrink-0">
                             <Shield className="h-3 w-3 mr-1" />
                             Admin
                           </Badge>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                         {user.phone && (
                           <div className="flex items-center gap-1">
                             <Phone className="h-3 w-3" />
-                            {user.phone}
+                            <span className="truncate">{user.phone}</span>
                           </div>
                         )}
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          Bergabung {new Date(user.created_at).toLocaleDateString('id-ID')}
+                          <Calendar className="h-3 w-3 flex-shrink-0" />
+                          <span>Bergabung {new Date(user.created_at).toLocaleDateString('id-ID')}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 sm:flex-shrink-0 self-end sm:self-auto">
                     {isAdmin ? (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleDemote(user)}
                         disabled={actionLoading === user.id}
+                        className="w-full sm:w-auto"
                       >
                         {actionLoading === user.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -238,6 +239,7 @@ export function UserManagement() {
                         size="sm"
                         onClick={() => handlePromote(user)}
                         disabled={actionLoading === user.id}
+                        className="w-full sm:w-auto"
                       >
                         {actionLoading === user.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
