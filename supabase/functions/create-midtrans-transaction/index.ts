@@ -3,8 +3,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const MIDTRANS_SERVER_KEY = Deno.env.get("MIDTRANS_SERVER_KEY");
-// Use sandbox URL for testing (change to app.midtrans.com for production)
-const MIDTRANS_BASE_URL = "https://app.sandbox.midtrans.com/snap/v1/transactions";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 
@@ -12,6 +10,36 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Helper to get Midtrans URL based on environment setting from database
+async function getMidtransConfig() {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  
+  try {
+    const { data, error } = await supabase
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', 'midtrans_environment')
+      .single();
+
+    if (error) {
+      console.error('Error fetching config:', error);
+      // Default to sandbox if config not found
+      return "https://app.sandbox.midtrans.com/snap/v1/transactions";
+    }
+
+    const isProduction = data?.config_value === 'production';
+    const url = isProduction 
+      ? "https://app.midtrans.com/snap/v1/transactions"
+      : "https://app.sandbox.midtrans.com/snap/v1/transactions";
+    
+    console.log(`Using Midtrans ${isProduction ? 'PRODUCTION' : 'SANDBOX'} environment`);
+    return url;
+  } catch (err) {
+    console.error('Error in getMidtransConfig:', err);
+    return "https://app.sandbox.midtrans.com/snap/v1/transactions";
+  }
+}
 
 const TransactionRequestSchema = z.object({
   orderId: z.string().uuid({ message: "Invalid order ID" }),
@@ -89,6 +117,9 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     const { orderId, orderNumber, amount, customerDetails, items } = parseResult.data;
+
+    // Get Midtrans URL based on environment config
+    const MIDTRANS_BASE_URL = await getMidtransConfig();
 
     // Create Midtrans transaction
     const authString = btoa(`${MIDTRANS_SERVER_KEY}:`);
