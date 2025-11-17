@@ -276,7 +276,53 @@ export const MemberProgress = () => {
         .order('tier_level');
 
       if (tierError) throw tierError;
-      setTiers(tierData || []);
+
+      // Fallback to default tiers if no config found in DB
+      const defaultTiers: TierConfig[] = [
+        {
+          tier_name: 'Bronze',
+          tier_level: 1,
+          min_spending: 0,
+          max_spending: 1000000,
+          discount_percentage: 0,
+          free_shipping_threshold: null,
+          badge_color: 'accent',
+          badge_icon: 'Medal',
+        },
+        {
+          tier_name: 'Silver',
+          tier_level: 2,
+          min_spending: 1000000,
+          max_spending: 5000000,
+          discount_percentage: 2,
+          free_shipping_threshold: null,
+          badge_color: 'muted',
+          badge_icon: 'Award',
+        },
+        {
+          tier_name: 'Gold',
+          tier_level: 3,
+          min_spending: 5000000,
+          max_spending: 10000000,
+          discount_percentage: 5,
+          free_shipping_threshold: null,
+          badge_color: 'accent-light',
+          badge_icon: 'Crown',
+        },
+        {
+          tier_name: 'Platinum',
+          tier_level: 4,
+          min_spending: 10000000,
+          max_spending: null,
+          discount_percentage: 10,
+          free_shipping_threshold: null,
+          badge_color: 'primary',
+          badge_icon: 'Gem',
+        },
+      ];
+
+      const tierList: TierConfig[] = (tierData && tierData.length > 0) ? tierData : defaultTiers;
+      setTiers(tierList);
 
       // Load user progress
       const { data: progressData, error: progressError } = await supabase
@@ -325,12 +371,12 @@ export const MemberProgress = () => {
       setProgress(newProgress);
 
       // Find current and next tier configs
-      if (tierData && progressData) {
-        const current = tierData.find(t => t.tier_name === progressData.current_tier);
-        setCurrentTierConfig(current || tierData[0]);
+      if (tierList && tierList.length > 0 && newProgress) {
+        const current = tierList.find(t => t.tier_name === newProgress.current_tier);
+        setCurrentTierConfig(current || tierList[0]);
 
-        const currentLevel = current?.tier_level || 1;
-        const next = tierData.find(t => t.tier_level === currentLevel + 1);
+        const currentLevel = (current?.tier_level || tierList[0].tier_level);
+        const next = tierList.find(t => t.tier_level === currentLevel + 1);
         setNextTierConfig(next || null);
       }
     } catch (error) {
