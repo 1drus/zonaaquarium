@@ -139,7 +139,7 @@ export function ProfileEditForm() {
         <CardTitle>Edit Profil</CardTitle>
         <CardDescription>Update informasi profil Anda</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 p-4 sm:p-6">
         <div className="flex items-center gap-4">
           <Avatar className="h-24 w-24">
             <AvatarImage src={avatarUrl} />

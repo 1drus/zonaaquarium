@@ -286,7 +286,7 @@ export const ActivityTimeline = () => {
             Aktivitas Terbaru
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           <div className="text-center py-12">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/30 mb-4">
               <Sparkles className="h-10 w-10 text-muted-foreground" />
@@ -316,7 +316,7 @@ export const ActivityTimeline = () => {
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 sm:p-6">
         <div className="relative space-y-6">
           {/* Timeline Line */}
           <div className="absolute left-6 top-3 bottom-3 w-0.5 bg-gradient-to-b from-primary/50 via-secondary/30 to-transparent" />
