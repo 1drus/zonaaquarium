@@ -988,7 +988,38 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          id: string | null
+          images: string[] | null
+          is_verified_purchase: boolean | null
+          order_id: string | null
+          product_id: string | null
+          rating: number | null
+          reviewer_avatar: string | null
+          reviewer_name: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       assign_tier_voucher: {
