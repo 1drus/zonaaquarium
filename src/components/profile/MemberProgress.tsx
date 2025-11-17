@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import confetti from 'canvas-confetti';
 
 interface TierConfig {
   tier_name: string;
@@ -92,6 +93,101 @@ const getTierColors = (tierName: string) => {
   return colors[tierName as keyof typeof colors] || colors.Bronze;
 };
 
+// Confetti configurations for each tier
+const getTierConfetti = (tierName: string) => {
+  const configs = {
+    Bronze: {
+      particleCount: 100,
+      spread: 70,
+      colors: ['#FF8A00', '#FFA500', '#FFB84D'],
+      scalar: 1.2,
+    },
+    Silver: {
+      particleCount: 150,
+      spread: 80,
+      colors: ['#C0C0C0', '#D3D3D3', '#E8E8E8'],
+      scalar: 1.4,
+    },
+    Gold: {
+      particleCount: 200,
+      spread: 90,
+      colors: ['#FFD700', '#FFC800', '#FFDB58'],
+      scalar: 1.6,
+    },
+    Platinum: {
+      particleCount: 300,
+      spread: 120,
+      colors: ['#0EA5E9', '#38BDF8', '#7DD3FC', '#E0F2FE'],
+      scalar: 2,
+      shapes: ['circle', 'square'] as confetti.Shape[],
+    },
+  };
+  return configs[tierName as keyof typeof configs] || configs.Bronze;
+};
+
+// Trigger celebration confetti
+const triggerTierCelebration = (tierName: string) => {
+  const config = getTierConfetti(tierName);
+  
+  // Fire confetti from multiple angles
+  const duration = 3000;
+  const animationEnd = Date.now() + duration;
+  const defaults = { 
+    startVelocity: 30, 
+    spread: config.spread, 
+    ticks: 60, 
+    zIndex: 9999,
+    ...config 
+  };
+
+  const randomInRange = (min: number, max: number) => {
+    return Math.random() * (max - min) + min;
+  };
+
+  const interval = setInterval(() => {
+    const timeLeft = animationEnd - Date.now();
+
+    if (timeLeft <= 0) {
+      return clearInterval(interval);
+    }
+
+    const particleCount = 50 * (timeLeft / duration);
+
+    // Fire from left
+    confetti({
+      ...defaults,
+      particleCount,
+      origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+    });
+
+    // Fire from right
+    confetti({
+      ...defaults,
+      particleCount,
+      origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+    });
+
+    // Fire from center
+    confetti({
+      ...defaults,
+      particleCount: particleCount * 1.5,
+      origin: { x: 0.5, y: 0.5 },
+      spread: config.spread * 1.5,
+    });
+  }, 250);
+
+  // Big burst at the end
+  setTimeout(() => {
+    confetti({
+      ...defaults,
+      particleCount: config.particleCount * 2,
+      origin: { x: 0.5, y: 0.5 },
+      spread: 360,
+      scalar: config.scalar * 1.5,
+    });
+  }, duration - 500);
+};
+
 export const MemberProgress = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -102,14 +198,51 @@ export const MemberProgress = () => {
   const [nextTierConfig, setNextTierConfig] = useState<TierConfig | null>(null);
   const [tierVouchers, setTierVouchers] = useState<TierVoucher[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const hasShownCelebration = useRef(false);
 
   useEffect(() => {
     if (user) {
       loadMemberProgress();
       loadTierVouchers();
 
+      // Subscribe to member progress changes for tier upgrades
+      const progressChannel = supabase
+        .channel('member-progress-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'member_progress',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log('Member progress updated:', payload);
+            const newData = payload.new as MemberProgressData;
+            const oldData = payload.old as MemberProgressData;
+
+            // Check if tier changed
+            if (newData.current_tier !== oldData.current_tier) {
+              console.log('Tier upgraded!', oldData.current_tier, '->', newData.current_tier);
+              
+              // Trigger celebration
+              triggerTierCelebration(newData.current_tier);
+              
+              // Show toast notification
+              toast({
+                title: '🎉 Selamat! Tier Naik!',
+                description: `Anda telah naik ke tier ${newData.current_tier}!`,
+                duration: 5000,
+              });
+            }
+
+            loadMemberProgress();
+          }
+        )
+        .subscribe();
+
       // Subscribe to new vouchers
-      const channel = supabase
+      const voucherChannel = supabase
         .channel('tier-vouchers-changes')
         .on(
           'postgres_changes',
@@ -128,7 +261,8 @@ export const MemberProgress = () => {
         .subscribe();
 
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(progressChannel);
+        supabase.removeChannel(voucherChannel);
       };
     }
   }, [user]);
@@ -155,12 +289,40 @@ export const MemberProgress = () => {
         throw progressError;
       }
 
-      setProgress(progressData || {
+      const newProgress = progressData || {
         current_tier: 'Bronze',
         total_spending: 0,
         order_count: 0,
         tier_upgraded_at: null,
-      });
+      };
+
+      // Check if tier upgrade just happened (within last 10 seconds)
+      if (
+        newProgress.tier_upgraded_at && 
+        !hasShownCelebration.current &&
+        !loading
+      ) {
+        const upgradeTime = new Date(newProgress.tier_upgraded_at).getTime();
+        const now = Date.now();
+        const tenSecondsAgo = now - 10000;
+
+        if (upgradeTime > tenSecondsAgo) {
+          console.log('Recent tier upgrade detected, triggering celebration!');
+          hasShownCelebration.current = true;
+          
+          // Small delay to ensure UI is ready
+          setTimeout(() => {
+            triggerTierCelebration(newProgress.current_tier);
+            toast({
+              title: '🎉 Selamat! Tier Naik!',
+              description: `Anda telah naik ke tier ${newProgress.current_tier}!`,
+              duration: 5000,
+            });
+          }, 500);
+        }
+      }
+
+      setProgress(newProgress);
 
       // Find current and next tier configs
       if (tierData && progressData) {
