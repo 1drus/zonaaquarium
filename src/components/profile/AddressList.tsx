@@ -112,37 +112,38 @@ export function AddressList() {
 
   return (
     <>
-      <Card className="max-w-4xl">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Alamat Pengiriman</CardTitle>
+      <Card className="max-w-4xl border-2">
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-1">
+              <CardTitle className="text-xl sm:text-2xl">Alamat Pengiriman</CardTitle>
               <CardDescription>Kelola alamat pengiriman Anda</CardDescription>
             </div>
-            <Button onClick={handleAddNew}>
+            <Button onClick={handleAddNew} className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Tambah Alamat
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 p-4 sm:p-6">
           {addresses.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <MapPin className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Belum ada alamat tersimpan</p>
-              <Button onClick={handleAddNew} variant="outline" className="mt-4">
+            <div className="text-center py-12 px-4">
+              <MapPin className="h-16 w-16 mx-auto mb-4 opacity-50 text-muted-foreground" />
+              <p className="text-muted-foreground mb-4">Belum ada alamat tersimpan</p>
+              <Button onClick={handleAddNew} variant="outline" className="w-full sm:w-auto">
+                <Plus className="mr-2 h-4 w-4" />
                 Tambah Alamat Pertama
               </Button>
             </div>
           ) : (
             addresses.map((address) => (
-              <Card key={address.id} className="relative">
-                <CardContent className="pt-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold">{address.label}</h3>
+              <Card key={address.id} className="relative border-2 hover:border-primary/30 transition-all duration-300">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold text-base sm:text-lg">{address.label}</h3>
                       {address.is_default && (
-                        <Badge variant="secondary">Utama</Badge>
+                        <Badge variant="secondary" className="text-xs">Utama</Badge>
                       )}
                     </div>
                     <div className="flex gap-2">
@@ -150,6 +151,7 @@ export function AddressList() {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleEdit(address)}
+                        className="h-9 w-9"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -157,16 +159,17 @@ export function AddressList() {
                         variant="ghost"
                         size="icon"
                         onClick={() => setDeleteId(address.id)}
+                        className="h-9 w-9"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                   
-                  <div className="text-sm space-y-1">
-                    <p className="font-medium">{address.recipient_name}</p>
+                  <div className="text-sm space-y-1.5">
+                    <p className="font-medium text-foreground">{address.recipient_name}</p>
                     <p className="text-muted-foreground">{address.phone}</p>
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground leading-relaxed">
                       {address.address_line}
                     </p>
                     <p className="text-muted-foreground">

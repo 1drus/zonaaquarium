@@ -130,17 +130,17 @@ export function AddressDialog({ open, onClose, address }: AddressDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{address ? 'Edit Alamat' : 'Tambah Alamat Baru'}</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto sm:max-w-2xl w-[calc(100vw-2rem)]">
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="text-xl sm:text-2xl">{address ? 'Edit Alamat' : 'Tambah Alamat Baru'}</DialogTitle>
+          <DialogDescription className="text-sm">
             {address ? 'Update informasi alamat pengiriman' : 'Tambahkan alamat pengiriman baru'}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2 col-span-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="label">Label Alamat</Label>
               <Input
                 id="label"
@@ -178,7 +178,7 @@ export function AddressDialog({ open, onClose, address }: AddressDialogProps) {
               )}
             </div>
 
-            <div className="space-y-2 col-span-2">
+            <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="addressLine">Alamat Lengkap</Label>
               <Input
                 id="addressLine"
@@ -268,8 +268,8 @@ export function AddressDialog({ open, onClose, address }: AddressDialogProps) {
             </Label>
           </div>
 
-          <div className="flex gap-4 pt-4">
-            <Button type="submit" disabled={loading}>
+          <div className="flex flex-col sm:flex-row gap-3 pt-6">
+            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -279,7 +279,7 @@ export function AddressDialog({ open, onClose, address }: AddressDialogProps) {
                 address ? 'Simpan Perubahan' : 'Tambah Alamat'
               )}
             </Button>
-            <Button type="button" variant="outline" onClick={() => onClose()}>
+            <Button type="button" variant="outline" onClick={() => onClose()} className="w-full sm:w-auto">
               Batal
             </Button>
           </div>
