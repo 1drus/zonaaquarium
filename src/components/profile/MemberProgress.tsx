@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Award, Medal, Crown, Gem, TrendingUp, ShoppingBag, Sparkles, Gift, Copy, Check } from 'lucide-react';
+import { Award, Medal, Crown, Gem, TrendingUp, ShoppingBag, Sparkles, Gift, Copy, Check, CheckCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -334,48 +334,193 @@ export const MemberProgress = () => {
           </p>
         </div>
 
-        {/* Progress to Next Tier */}
-        {nextTierConfig && (
-          <div className="space-y-3 p-4 rounded-xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/50">
-            <div className="flex justify-between items-center text-sm">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                <span className="font-medium">Progress ke {nextTierConfig.tier_name}</span>
-              </div>
-              <Badge variant="secondary" className="text-xs font-bold">
-                {progressPercentage.toFixed(0)}%
-              </Badge>
-            </div>
-            
-            {/* Enhanced Progress Bar with gradient */}
-            <div className="relative">
-              <Progress 
-                value={progressPercentage} 
-                className="h-4 bg-muted/50 border border-border/30 shadow-inner"
+        {/* Tier Journey Roadmap */}
+        <div className="space-y-6 p-5 rounded-xl bg-gradient-to-br from-primary/5 via-accent/5 to-background border border-primary/10">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="h-5 w-5 text-primary animate-pulse" />
+            <h4 className="font-semibold text-lg">Perjalanan Member Anda</h4>
+          </div>
+
+          {/* Tier Steps Visualization */}
+          <div className="relative">
+            {/* Progress line */}
+            <div className="absolute top-8 left-0 w-full h-1 bg-muted/30 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-primary via-accent to-primary-light transition-all duration-1000 ease-out animate-fade-in"
+                style={{ 
+                  width: `${((currentTierConfig.tier_level - 1) / 3 * 100) + (progressPercentage / 3)}%` 
+                }}
               />
-              
-              {/* Milestone markers */}
-              <div className="absolute inset-0 flex items-center justify-between px-1">
-                {[25, 50, 75].map((milestone) => (
-                  <div
-                    key={milestone}
-                    className={`h-6 w-0.5 rounded-full transition-colors ${
-                      progressPercentage >= milestone 
-                        ? 'bg-primary-foreground/60' 
-                        : 'bg-muted-foreground/20'
-                    }`}
-                  />
-                ))}
-              </div>
             </div>
-            
-            <div className="flex items-center justify-center gap-1.5 text-xs">
-              <span className="text-muted-foreground">Belanja lagi</span>
-              <span className="font-bold text-primary">{formatCurrency(remainingToNext)}</span>
-              <span className="text-muted-foreground">untuk mencapai {nextTierConfig.tier_name}</span>
+
+            {/* Tier steps */}
+            <div className="relative grid grid-cols-4 gap-2">
+              {tiers.map((tier) => {
+                const isCompleted = tier.tier_level < currentTierConfig.tier_level;
+                const isCurrent = tier.tier_level === currentTierConfig.tier_level;
+                const isNext = tier.tier_level === currentTierConfig.tier_level + 1;
+                const tierColors = getTierColors(tier.tier_name);
+
+                return (
+                  <div
+                    key={tier.tier_name}
+                    className={`flex flex-col items-center gap-2 transition-all duration-500 ${
+                      isCurrent ? 'scale-110 animate-scale-in' : 'hover:scale-105'
+                    }`}
+                  >
+                    {/* Step circle */}
+                    <div className="relative group cursor-pointer">
+                      {/* Glow effect for current tier */}
+                      {isCurrent && (
+                        <>
+                          <div className={`absolute -inset-2 rounded-full ${tierColors.ring} ring-2 animate-pulse blur-sm ${tierColors.glow}`} />
+                          <div className={`absolute -inset-1 rounded-full ${tierColors.ring} ring-4 opacity-20 animate-ping`} />
+                        </>
+                      )}
+                      
+                      {/* Step indicator */}
+                      <div
+                        className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 ${
+                          isCompleted
+                            ? `${tierColors.badge} shadow-lg ${tierColors.glow}`
+                            : isCurrent
+                            ? `${tierColors.badge} shadow-xl ${tierColors.glow} ring-4 ${tierColors.ring}`
+                            : 'bg-muted/50 border-2 border-muted-foreground/20'
+                        } ${isCurrent ? 'animate-bounce' : ''}`}
+                      >
+                        {/* Shine effect */}
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        
+                        {/* Icon */}
+                        {getTierIcon(
+                          tier.badge_icon,
+                          `h-8 w-8 relative z-10 ${
+                            isCompleted || isCurrent
+                              ? 'text-current'
+                              : 'text-muted-foreground/40'
+                          }`
+                        )}
+
+                        {/* Checkmark for completed */}
+                        {isCompleted && (
+                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center animate-scale-in">
+                            <Check className="h-3 w-3 text-primary-foreground" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Tooltip on hover */}
+                      <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                        <div className="bg-popover text-popover-foreground px-3 py-2 rounded-lg shadow-xl border text-xs whitespace-nowrap">
+                          <p className="font-semibold">{tier.tier_name}</p>
+                          <p className="text-muted-foreground">Min: {formatCurrency(tier.min_spending)}</p>
+                          {tier.discount_percentage > 0 && (
+                            <p className="text-primary">Diskon {tier.discount_percentage}%</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tier name */}
+                    <div className="text-center">
+                      <p className={`text-xs font-medium transition-colors ${
+                        isCurrent 
+                          ? 'text-foreground font-bold' 
+                          : isCompleted 
+                          ? 'text-muted-foreground' 
+                          : 'text-muted-foreground/60'
+                      }`}>
+                        {tier.tier_name}
+                      </p>
+                      {isCurrent && (
+                        <Badge variant="secondary" className="text-[10px] mt-1 animate-fade-in">
+                          Saat ini
+                        </Badge>
+                      )}
+                      {isNext && (
+                        <Badge variant="outline" className="text-[10px] mt-1 animate-fade-in">
+                          Selanjutnya
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        )}
+
+          {/* Progress to Next Tier Details */}
+          {nextTierConfig && (
+            <div className="space-y-3 mt-6 p-4 rounded-xl bg-gradient-to-br from-accent/10 via-primary/5 to-background border border-primary/20 animate-fade-in">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                  <span className="text-sm font-medium">Target: {nextTierConfig.tier_name}</span>
+                </div>
+                <Badge className="text-xs font-bold bg-gradient-to-r from-primary to-accent">
+                  {progressPercentage.toFixed(0)}%
+                </Badge>
+              </div>
+              
+              {/* Enhanced Progress Bar */}
+              <div className="relative group">
+                <Progress 
+                  value={progressPercentage} 
+                  className="h-5 bg-muted/50 border border-border/30 shadow-inner overflow-hidden"
+                />
+                
+                {/* Animated shine effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+                
+                {/* Progress percentage text inside bar */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xs font-bold mix-blend-difference text-white drop-shadow-lg">
+                    {progressPercentage.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+              
+              {/* Spending details */}
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="space-y-1 p-2 rounded-lg bg-background/50">
+                  <p className="text-muted-foreground">Sudah Belanja</p>
+                  <p className="font-bold text-primary">{formatCurrency(progress.total_spending)}</p>
+                </div>
+                <div className="space-y-1 p-2 rounded-lg bg-accent/10 border border-accent/20">
+                  <p className="text-muted-foreground">Kurang</p>
+                  <p className="font-bold text-accent">{formatCurrency(remainingToNext)}</p>
+                </div>
+                <div className="space-y-1 p-2 rounded-lg bg-background/50">
+                  <p className="text-muted-foreground">Target</p>
+                  <p className="font-bold">{formatCurrency(nextTierConfig.min_spending)}</p>
+                </div>
+              </div>
+
+              {/* Motivational message */}
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 animate-fade-in">
+                <Gift className="h-4 w-4 text-primary animate-bounce" />
+                <p className="text-xs text-muted-foreground">
+                  Belanja <span className="font-bold text-foreground">{formatCurrency(remainingToNext)}</span> lagi untuk unlock benefit {nextTierConfig.tier_name}!
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Max tier reached */}
+          {currentTierConfig.tier_level === 4 && (
+            <div className="p-4 rounded-xl bg-gradient-to-r from-primary/20 via-accent/20 to-primary-light/20 border border-primary/30 animate-fade-in">
+              <div className="flex items-center gap-3">
+                <Crown className="h-6 w-6 text-accent animate-bounce" />
+                <div>
+                  <p className="font-bold text-foreground">Selamat! 🎉</p>
+                  <p className="text-sm text-muted-foreground">
+                    Anda telah mencapai tier tertinggi!
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {currentTierConfig.tier_level === 4 && (
           <div className="text-center p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg">
