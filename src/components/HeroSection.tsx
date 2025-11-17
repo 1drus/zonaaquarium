@@ -13,11 +13,11 @@ export const HeroSection = () => {
           alt="Beautiful tropical fish in aquarium"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-transparent pointer-events-none" />
       </div>
 
       {/* Content */}
-      <div className="container relative h-full flex items-center">
+      <div className="container relative z-10 h-full flex items-center">
         <div className="max-w-2xl space-y-6 animate-in fade-in slide-in-from-left duration-700">
           <h1 className="text-4xl md:text-6xl font-bold leading-tight">
             Koleksi Ikan Hias
@@ -46,7 +46,7 @@ export const HeroSection = () => {
       </div>
 
       {/* Decorative Wave */}
-      <div className="absolute bottom-0 left-0 right-0 h-24">
+      <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none select-none">
         <svg
           className="w-full h-full"
           viewBox="0 0 1440 100"
