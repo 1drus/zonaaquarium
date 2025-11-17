@@ -13,10 +13,8 @@ interface Review {
   images: string[] | null;
   created_at: string;
   is_verified_purchase: boolean;
-  profiles: {
-    full_name: string;
-    avatar_url: string | null;
-  };
+  reviewer_name: string;
+  reviewer_avatar: string | null;
 }
 
 interface ProductReviewsProps {
@@ -37,39 +35,16 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
   }, [productId]);
 
   const loadReviews = async () => {
+    // Use secure public_reviews view that doesn't expose user_id
     const { data, error } = await supabase
-      .from('reviews')
-      .select(`
-        id,
-        rating,
-        title,
-        comment,
-        images,
-        created_at,
-        is_verified_purchase,
-        user_id
-      `)
+      .from('public_reviews')
+      .select('*')
       .eq('product_id', productId)
-      .eq('is_visible', true)
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      // Fetch profiles separately
-      const userIds = [...new Set(data.map(r => r.user_id))];
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url')
-        .in('id', userIds);
-
-      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
-      
-      const reviewsWithProfiles = data.map(review => ({
-        ...review,
-        profiles: profilesMap.get(review.user_id) || { full_name: 'User', avatar_url: null }
-      }));
-
-      setReviews(reviewsWithProfiles as Review[]);
-      calculateStats(reviewsWithProfiles as Review[]);
+      setReviews(data as Review[]);
+      calculateStats(data as Review[]);
     }
     setLoading(false);
   };
@@ -170,15 +145,15 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
             <CardContent className="pt-6">
               <div className="flex gap-4">
                 <Avatar>
-                  <AvatarImage src={review.profiles.avatar_url || ''} />
+                  <AvatarImage src={review.reviewer_avatar || ''} />
                   <AvatarFallback>
-                    {review.profiles.full_name.charAt(0).toUpperCase()}
+                    {review.reviewer_name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 space-y-2">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="font-semibold">{review.profiles.full_name}</p>
+                      <p className="font-semibold">{review.reviewer_name}</p>
                       {renderStars(review.rating)}
                     </div>
                     <p className="text-sm text-muted-foreground">
