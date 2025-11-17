@@ -60,12 +60,22 @@ const getTierIcon = (iconName: string, className: string) => {
 
 const getTierGradient = (tierName: string) => {
   const gradients = {
-    Bronze: 'from-amber-700 via-amber-600 to-amber-800',
-    Silver: 'from-gray-400 via-gray-300 to-gray-500',
-    Gold: 'from-yellow-400 via-yellow-300 to-yellow-500',
-    Platinum: 'from-slate-300 via-slate-200 to-slate-400',
+    Bronze: 'from-amber-700 via-amber-500 to-amber-900',
+    Silver: 'from-gray-400 via-gray-200 to-gray-600',
+    Gold: 'from-yellow-500 via-yellow-300 to-yellow-600',
+    Platinum: 'from-indigo-400 via-purple-300 to-pink-400',
   };
   return gradients[tierName as keyof typeof gradients] || gradients.Bronze;
+};
+
+const getTierRing = (tierName: string) => {
+  const rings = {
+    Bronze: 'ring-amber-500/50',
+    Silver: 'ring-gray-400/50',
+    Gold: 'ring-yellow-400/50',
+    Platinum: 'ring-purple-400/50',
+  };
+  return rings[tierName as keyof typeof rings] || rings.Bronze;
 };
 
 export const MemberProgress = () => {
@@ -277,10 +287,27 @@ export const MemberProgress = () => {
 
       <CardContent className="space-y-6 relative">
         {/* Current Tier Badge */}
-        <div className="flex items-center justify-center">
-          <div className={`relative p-8 rounded-full bg-gradient-to-br ${getTierGradient(progress.current_tier)} shadow-xl animate-scale-in`}>
-            <div className="absolute inset-0 rounded-full animate-pulse opacity-50 bg-gradient-to-br from-white/30 to-transparent" />
-            {getTierIcon(currentTierConfig.badge_icon, 'h-16 w-16 text-white relative z-10')}
+        <div className="flex items-center justify-center py-4">
+          <div className="relative">
+            {/* Outer glow ring */}
+            <div className={`absolute -inset-3 rounded-full ${getTierRing(progress.current_tier)} ring-4 animate-pulse`} />
+            
+            {/* Main badge with 3D effect */}
+            <div className={`relative p-10 rounded-full bg-gradient-to-br ${getTierGradient(progress.current_tier)} shadow-2xl transform transition-transform hover:scale-110 hover:rotate-12 duration-300`}>
+              {/* Shine effect */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/40 via-white/10 to-transparent opacity-80" />
+              
+              {/* Inner shadow for depth */}
+              <div className="absolute inset-2 rounded-full shadow-inner bg-black/10" />
+              
+              {/* Animated sparkles */}
+              <div className="absolute top-2 right-2">
+                <Sparkles className="h-4 w-4 text-white/80 animate-pulse" />
+              </div>
+              
+              {/* Icon */}
+              {getTierIcon(currentTierConfig.badge_icon, 'h-20 w-20 text-white relative z-10 drop-shadow-lg')}
+            </div>
           </div>
         </div>
 
@@ -295,15 +322,44 @@ export const MemberProgress = () => {
 
         {/* Progress to Next Tier */}
         {nextTierConfig && (
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Progress ke {nextTierConfig.tier_name}</span>
-              <span className="font-medium">{progressPercentage.toFixed(0)}%</span>
+          <div className="space-y-3 p-4 rounded-xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/50">
+            <div className="flex justify-between items-center text-sm">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <span className="font-medium">Progress ke {nextTierConfig.tier_name}</span>
+              </div>
+              <Badge variant="secondary" className="text-xs font-bold">
+                {progressPercentage.toFixed(0)}%
+              </Badge>
             </div>
-            <Progress value={progressPercentage} className="h-3" />
-            <p className="text-xs text-center text-muted-foreground">
-              Belanja lagi {formatCurrency(remainingToNext)} untuk mencapai {nextTierConfig.tier_name}
-            </p>
+            
+            {/* Enhanced Progress Bar with gradient */}
+            <div className="relative">
+              <Progress 
+                value={progressPercentage} 
+                className="h-4 bg-muted/50 border border-border/30 shadow-inner"
+              />
+              
+              {/* Milestone markers */}
+              <div className="absolute inset-0 flex items-center justify-between px-1">
+                {[25, 50, 75].map((milestone) => (
+                  <div
+                    key={milestone}
+                    className={`h-6 w-0.5 rounded-full transition-colors ${
+                      progressPercentage >= milestone 
+                        ? 'bg-primary-foreground/60' 
+                        : 'bg-muted-foreground/20'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-center gap-1.5 text-xs">
+              <span className="text-muted-foreground">Belanja lagi</span>
+              <span className="font-bold text-primary">{formatCurrency(remainingToNext)}</span>
+              <span className="text-muted-foreground">untuk mencapai {nextTierConfig.tier_name}</span>
+            </div>
           </div>
         )}
 
@@ -316,52 +372,84 @@ export const MemberProgress = () => {
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-          <div className="text-center space-y-1">
-            <div className="flex items-center justify-center gap-1 text-muted-foreground">
-              <TrendingUp className="h-4 w-4" />
-              <span className="text-xs">Total Belanja</span>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="relative group p-4 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 hover:border-primary/40 transition-all hover:shadow-lg">
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <TrendingUp className="h-3 w-3 text-primary" />
             </div>
-            <p className="text-lg font-bold">{formatCurrency(progress.total_spending)}</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="p-1.5 rounded-lg bg-primary/10">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                </div>
+                <span className="text-xs font-medium">Total Belanja</span>
+              </div>
+              <p className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                {formatCurrency(progress.total_spending)}
+              </p>
+            </div>
           </div>
-          <div className="text-center space-y-1">
-            <div className="flex items-center justify-center gap-1 text-muted-foreground">
-              <ShoppingBag className="h-4 w-4" />
-              <span className="text-xs">Total Pesanan</span>
+          
+          <div className="relative group p-4 rounded-xl bg-gradient-to-br from-secondary/10 via-secondary/5 to-transparent border border-secondary/20 hover:border-secondary/40 transition-all hover:shadow-lg">
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <ShoppingBag className="h-3 w-3 text-foreground" />
             </div>
-            <p className="text-lg font-bold">{progress.order_count}</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="p-1.5 rounded-lg bg-secondary/10">
+                  <ShoppingBag className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-medium">Total Pesanan</span>
+              </div>
+              <p className="text-2xl font-bold">{progress.order_count}</p>
+            </div>
           </div>
         </div>
 
         {/* Benefits */}
-        <div className="space-y-2 pt-4 border-t">
-          <h4 className="font-semibold text-sm">Benefit {progress.current_tier}:</h4>
-          <ul className="space-y-1.5 text-sm text-muted-foreground">
+        <div className="space-y-3 p-4 rounded-xl bg-gradient-to-br from-accent/10 to-accent/5 border border-accent/20">
+          <div className="flex items-center gap-2">
+            <div className={`p-1.5 rounded-lg bg-gradient-to-br ${getTierGradient(progress.current_tier)}`}>
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
+            <h4 className="font-semibold text-sm">Benefit {progress.current_tier}</h4>
+          </div>
+          <ul className="space-y-2 text-sm">
             {currentTierConfig.discount_percentage > 0 && (
-              <li className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                Diskon {currentTierConfig.discount_percentage}% semua produk
+              <li className="flex items-center gap-3 p-2 rounded-lg bg-background/50 hover:bg-background/80 transition-colors">
+                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                </div>
+                <span>Diskon <strong className="text-primary">{currentTierConfig.discount_percentage}%</strong> semua produk</span>
               </li>
             )}
             {currentTierConfig.free_shipping_threshold !== null && (
-              <li className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                {currentTierConfig.free_shipping_threshold === 0 
-                  ? 'Gratis ongkir untuk semua pesanan'
-                  : `Gratis ongkir min. ${formatCurrency(currentTierConfig.free_shipping_threshold)}`
-                }
+              <li className="flex items-center gap-3 p-2 rounded-lg bg-background/50 hover:bg-background/80 transition-colors">
+                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                </div>
+                <span>
+                  {currentTierConfig.free_shipping_threshold === 0 
+                    ? <><strong className="text-primary">Gratis ongkir</strong> untuk semua pesanan</>
+                    : <><strong className="text-primary">Gratis ongkir</strong> min. {formatCurrency(currentTierConfig.free_shipping_threshold)}</>
+                  }
+                </span>
               </li>
             )}
             {currentTierConfig.tier_level >= 3 && (
-              <li className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                Priority customer support
+              <li className="flex items-center gap-3 p-2 rounded-lg bg-background/50 hover:bg-background/80 transition-colors">
+                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                </div>
+                <span><strong className="text-primary">Priority</strong> customer support</span>
               </li>
             )}
             {currentTierConfig.tier_level === 4 && (
-              <li className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                Early access ke produk baru
+              <li className="flex items-center gap-3 p-2 rounded-lg bg-background/50 hover:bg-background/80 transition-colors">
+                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                </div>
+                <span><strong className="text-primary">Early access</strong> ke produk baru</span>
               </li>
             )}
           </ul>
@@ -443,30 +531,69 @@ export const MemberProgress = () => {
         )}
 
         {/* All Tiers Overview */}
-        <div className="space-y-2 pt-4 border-t">
-          <h4 className="font-semibold text-sm">Semua Tier:</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {tiers.map((tier) => (
-              <div
-                key={tier.tier_name}
-                className={`p-3 rounded-lg border-2 transition-all ${
-                  tier.tier_name === progress.current_tier
-                    ? 'border-primary bg-primary/5 scale-105'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  {getTierIcon(tier.badge_icon, 'h-4 w-4')}
-                  <span className="font-medium text-xs">{tier.tier_name}</span>
+        <div className="space-y-3 pt-4 border-t">
+          <div className="flex items-center gap-2">
+            <Medal className="h-4 w-4 text-muted-foreground" />
+            <h4 className="font-semibold text-sm">Semua Tier</h4>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {tiers.map((tier) => {
+              const isCurrentTier = tier.tier_name === progress.current_tier;
+              const isAchieved = tier.tier_level <= currentTierConfig.tier_level;
+              
+              return (
+                <div
+                  key={tier.tier_name}
+                  className={`group relative p-4 rounded-xl border-2 transition-all duration-300 ${
+                    isCurrentTier
+                      ? `border-primary bg-gradient-to-br ${getTierGradient(tier.tier_name)}/10 shadow-lg scale-105 ring-2 ${getTierRing(tier.tier_name)}`
+                      : isAchieved
+                      ? 'border-primary/30 bg-primary/5 hover:border-primary/50 hover:shadow-md'
+                      : 'border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40'
+                  }`}
+                >
+                  {/* Achievement badge for unlocked tiers */}
+                  {isAchieved && !isCurrentTier && (
+                    <div className="absolute -top-2 -right-2 p-1 rounded-full bg-primary">
+                      <Check className="h-3 w-3 text-primary-foreground" />
+                    </div>
+                  )}
+                  
+                  {/* Current tier indicator */}
+                  {isCurrentTier && (
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2">
+                      <Badge className="text-xs px-2 py-0.5 bg-primary">Anda disini</Badge>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`p-2 rounded-lg bg-gradient-to-br ${getTierGradient(tier.tier_name)} ${isAchieved ? 'opacity-100' : 'opacity-40'}`}>
+                        {getTierIcon(tier.badge_icon, 'h-5 w-5 text-white')}
+                      </div>
+                      <span className={`font-bold text-sm ${isCurrentTier ? 'text-primary' : isAchieved ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        {tier.tier_name}
+                      </span>
+                    </div>
+                    
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Min. Belanja
+                      </p>
+                      <p className={`text-sm font-bold ${isCurrentTier ? 'text-primary' : ''}`}>
+                        {formatCurrency(tier.min_spending)}
+                      </p>
+                    </div>
+                    
+                    {tier.discount_percentage > 0 && (
+                      <Badge variant="secondary" className="text-xs w-full justify-center">
+                        {tier.discount_percentage}% OFF
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {tier.max_spending 
-                    ? `${formatCurrency(tier.min_spending).slice(0, -3)}K+`
-                    : `${formatCurrency(tier.min_spending).slice(0, -3)}K+`
-                  }
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </CardContent>
