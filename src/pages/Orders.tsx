@@ -6,7 +6,8 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { OrderCard } from '@/components/orders/OrderCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Package } from 'lucide-react';
+import { Loader2, Package, Wifi } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Order {
   id: string;
@@ -28,6 +29,7 @@ export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -42,21 +44,44 @@ export default function Orders() {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'orders',
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Order change detected:', payload);
+          console.log('Order update detected:', payload);
+          const newData = payload.new as Order;
+          const oldData = payload.old as Order;
+          
+          // Show notification based on what changed
+          if (newData.payment_status !== oldData.payment_status) {
+            toast.success('Status Pembayaran Diperbarui', {
+              description: `Pesanan ${newData.order_number} - ${getPaymentStatusText(newData.payment_status)}`
+            });
+          } else if (newData.status !== oldData.status) {
+            toast.success('Status Pesanan Diperbarui', {
+              description: `Pesanan ${newData.order_number} - ${getOrderStatusText(newData.status)}`
+            });
+          }
+          
           // Reload orders when any change occurs
           loadOrders();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Realtime connected for orders');
+          setIsRealtimeConnected(true);
+        } else if (status === 'CLOSED') {
+          console.log('Realtime disconnected');
+          setIsRealtimeConnected(false);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
+      setIsRealtimeConnected(false);
     };
   }, [user, navigate]);
 
@@ -97,6 +122,27 @@ export default function Orders() {
     return orders.filter(order => order.status === status).length;
   };
 
+  const getOrderStatusText = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'menunggu_pembayaran': 'Menunggu Pembayaran',
+      'diproses': 'Diproses',
+      'dikirim': 'Dikirim',
+      'selesai': 'Selesai',
+      'dibatalkan': 'Dibatalkan'
+    };
+    return statusMap[status] || status;
+  };
+
+  const getPaymentStatusText = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'pending': 'Menunggu',
+      'paid': 'Lunas',
+      'failed': 'Gagal',
+      'expired': 'Kedaluwarsa'
+    };
+    return statusMap[status] || status;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -114,7 +160,13 @@ export default function Orders() {
       <Header />
       <main className="flex-1 py-8 bg-background">
         <div className="container max-w-5xl">
-          <h1 className="text-3xl font-bold mb-8">Pesanan Saya</h1>
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-bold">Pesanan Saya</h1>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Wifi className={`h-4 w-4 ${isRealtimeConnected ? 'text-green-500' : 'text-gray-400'}`} />
+              <span>{isRealtimeConnected ? 'Live Updates' : 'Offline'}</span>
+            </div>
+          </div>
 
           {orders.length === 0 ? (
             <div className="text-center py-16">
