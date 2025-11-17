@@ -112,7 +112,7 @@ export function AddressList() {
 
   return (
     <>
-      <Card className="max-w-4xl border-2">
+      <Card className="border-2">
         <CardHeader>
           <CardTitle className="text-xl sm:text-2xl">Alamat Pengiriman</CardTitle>
           <CardDescription>Kelola alamat pengiriman Anda</CardDescription>

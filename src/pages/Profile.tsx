@@ -126,7 +126,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-muted/10 to-background">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-8 space-y-8">
+      <main className="flex-1 container mx-auto px-4 py-8 space-y-8 max-w-4xl">
         {/* Profile Header */}
         <Card className="overflow-hidden border-2 hover:border-primary/30 transition-all duration-500 hover:shadow-xl">
           <div className={`h-32 bg-gradient-to-br ${getTierColor(memberData?.current_tier || 'Bronze')} relative overflow-hidden`}>
