@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { ProfileEditForm } from '@/components/profile/ProfileEditForm';
 import { AddressList } from '@/components/profile/AddressList';
 import { ActivityTimeline } from '@/components/profile/ActivityTimeline';
+import { MemberProgress } from '@/components/profile/MemberProgress';
 import { Loader2, User, Mail, Phone, Award, ShoppingBag, TrendingUp, MapPin, Clock } from 'lucide-react';
 
 interface Profile {
@@ -222,6 +223,9 @@ const Profile = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Member Tier Progress */}
+        <MemberProgress />
 
         {/* Tabs Section */}
         <Card className="border-2">
