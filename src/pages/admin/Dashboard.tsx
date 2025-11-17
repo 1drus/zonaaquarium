@@ -16,6 +16,7 @@ import { CategoryManagement } from '@/components/admin/CategoryManagement';
 import { AdvancedAnalytics } from '@/components/admin/AdvancedAnalytics';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { LowStockAlerts } from '@/components/admin/LowStockAlerts';
+import { SystemSettings } from '@/components/admin/SystemSettings';
 import { Loader2, Shield } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -68,7 +69,7 @@ export default function AdminDashboard() {
 
           <Tabs defaultValue="stats" className="space-y-6">
             <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-              <TabsList className="inline-flex w-auto min-w-full md:grid md:w-full md:grid-cols-5 lg:grid-cols-10 gap-1">
+              <TabsList className="inline-flex w-auto min-w-full md:grid md:w-full md:grid-cols-5 lg:grid-cols-11 gap-1">
                 <TabsTrigger value="stats" className="whitespace-nowrap">Statistik</TabsTrigger>
                 <TabsTrigger value="analytics" className="whitespace-nowrap">Analytics</TabsTrigger>
                 <TabsTrigger value="products" className="whitespace-nowrap">Produk</TabsTrigger>
@@ -79,6 +80,7 @@ export default function AdminDashboard() {
                 <TabsTrigger value="vouchers" className="whitespace-nowrap">Voucher</TabsTrigger>
                 <TabsTrigger value="users" className="whitespace-nowrap">Users</TabsTrigger>
                 <TabsTrigger value="stock" className="whitespace-nowrap">Stok</TabsTrigger>
+                <TabsTrigger value="settings" className="whitespace-nowrap">Settings</TabsTrigger>
               </TabsList>
             </div>
 
@@ -120,6 +122,10 @@ export default function AdminDashboard() {
 
             <TabsContent value="stock">
               <LowStockAlerts />
+            </TabsContent>
+
+            <TabsContent value="settings">
+              <SystemSettings />
             </TabsContent>
           </Tabs>
         </div>
