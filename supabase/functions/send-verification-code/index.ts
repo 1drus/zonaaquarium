@@ -53,6 +53,28 @@ const handler = async (req: Request): Promise<Response> => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
+    // Rate limiting: Check if code was requested recently (3 per hour)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { data: recentCodes } = await supabase
+      .from('email_verification_codes')
+      .select('created_at')
+      .eq('email', email)
+      .gte('created_at', oneHourAgo);
+    
+    if (recentCodes && recentCodes.length >= 3) {
+      console.log("Rate limit exceeded for email:", email);
+      return new Response(
+        JSON.stringify({ 
+          error: "Terlalu banyak permintaan. Silakan coba lagi dalam 1 jam.",
+          retryAfter: 3600
+        }),
+        { 
+          status: 429, 
+          headers: { "Content-Type": "application/json", ...corsHeaders } 
+        }
+      );
+    }
+    
     // Delete existing verification codes for this email
     await supabase
       .from('email_verification_codes')

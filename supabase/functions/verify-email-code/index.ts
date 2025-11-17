@@ -44,6 +44,28 @@ const handler = async (req: Request): Promise<Response> => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
+    // Rate limiting: Check verification attempts (5 per hour)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { data: recentAttempts } = await supabase
+      .from('email_verification_codes')
+      .select('created_at')
+      .eq('email', email)
+      .gte('created_at', oneHourAgo);
+    
+    if (recentAttempts && recentAttempts.length >= 5) {
+      console.log("Rate limit exceeded for verification attempts:", email);
+      return new Response(
+        JSON.stringify({ 
+          error: "Terlalu banyak percobaan verifikasi. Silakan coba lagi dalam 1 jam.",
+          retryAfter: 3600
+        }),
+        { 
+          status: 429, 
+          headers: { "Content-Type": "application/json", ...corsHeaders } 
+        }
+      );
+    }
+    
     // Find verification code
     const { data: verificationData, error: fetchError } = await supabase
       .from('email_verification_codes')
