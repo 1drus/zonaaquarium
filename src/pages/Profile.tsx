@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { ProfileEditForm } from '@/components/profile/ProfileEditForm';
 import { AddressList } from '@/components/profile/AddressList';
 import { MemberProgress } from '@/components/profile/MemberProgress';
-import { Loader2, User, Mail, Phone, Award, ShoppingBag, TrendingUp, MapPin } from 'lucide-react';
+import { ActivityTimeline } from '@/components/profile/ActivityTimeline';
+import { Loader2, User, Mail, Phone, Award, ShoppingBag, TrendingUp, MapPin, Clock } from 'lucide-react';
 
 interface Profile {
   full_name: string;
@@ -214,7 +215,7 @@ const Profile = () => {
         <Card className="border-2">
           <CardContent className="p-6">
             <Tabs defaultValue="member" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-8 p-1 bg-muted/30 rounded-xl h-auto">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-8 p-1 bg-muted/30 rounded-xl h-auto gap-1">
                 <TabsTrigger 
                   value="member" 
                   className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg rounded-lg py-3 font-semibold transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm"
@@ -222,6 +223,14 @@ const Profile = () => {
                   <Award className="h-4 w-4" />
                   <span className="hidden sm:inline">Member Progress</span>
                   <span className="sm:hidden">Progress</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="activity" 
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg rounded-lg py-3 font-semibold transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm"
+                >
+                  <Clock className="h-4 w-4" />
+                  <span className="hidden sm:inline">Aktivitas</span>
+                  <span className="sm:hidden">Aktivitas</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="profile" 
@@ -243,6 +252,10 @@ const Profile = () => {
               
               <TabsContent value="member" className="mt-0 animate-fade-in">
                 <MemberProgress />
+              </TabsContent>
+              
+              <TabsContent value="activity" className="mt-0 animate-fade-in">
+                <ActivityTimeline />
               </TabsContent>
               
               <TabsContent value="profile" className="mt-0 animate-fade-in">
