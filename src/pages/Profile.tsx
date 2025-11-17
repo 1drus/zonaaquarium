@@ -50,28 +50,43 @@ const Profile = () => {
 
     try {
       // Load profile
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
-      if (profileData) {
+      if (profileError) {
+        console.error('Error loading profile:', profileError);
+      } else if (profileData) {
         setProfile(profileData);
       }
 
-      // Load member progress
-      const { data: memberProgressData } = await supabase
+      // Load member progress with maybeSingle to handle missing data gracefully
+      const { data: memberProgressData, error: memberError } = await supabase
         .from('member_progress')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (memberProgressData) {
-        setMemberData(memberProgressData);
+      if (memberError) {
+        console.error('Error loading member progress:', memberError);
       }
+      
+      // Set member data with defaults if null
+      setMemberData(memberProgressData || {
+        current_tier: 'Bronze',
+        total_spending: 0,
+        order_count: 0,
+      });
     } catch (error) {
       console.error('Error loading profile data:', error);
+      // Set default member data on error
+      setMemberData({
+        current_tier: 'Bronze',
+        total_spending: 0,
+        order_count: 0,
+      });
     } finally {
       setLoadingData(false);
     }
@@ -129,11 +144,9 @@ const Profile = () => {
                     {profile?.full_name ? getInitials(profile.full_name) : <User className="h-12 w-12" />}
                   </AvatarFallback>
                 </Avatar>
-                {memberData && (
-                  <Badge className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1 shadow-lg bg-gradient-to-r from-primary via-secondary to-primary text-primary-foreground font-bold whitespace-nowrap">
-                    {memberData.current_tier}
-                  </Badge>
-                )}
+                <Badge className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1 shadow-lg bg-gradient-to-r from-primary via-secondary to-primary text-primary-foreground font-bold whitespace-nowrap">
+                  {memberData?.current_tier || 'Bronze'}
+                </Badge>
               </div>
 
               {/* User Info */}
@@ -159,57 +172,55 @@ const Profile = () => {
         </Card>
 
         {/* Quick Stats */}
-        {memberData && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="group overflow-hidden border-2 hover:border-primary/50 transition-all duration-500 hover:shadow-xl hover:scale-105 hover:-translate-y-1">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 group-hover:from-primary/30 group-hover:to-primary/10 transition-all duration-500">
-                    <Award className="h-8 w-8 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground font-medium">Tier Saat Ini</p>
-                    <p className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                      {memberData.current_tier}
-                    </p>
-                  </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card className="group overflow-hidden border-2 hover:border-primary/50 transition-all duration-500 hover:shadow-xl hover:scale-105 hover:-translate-y-1">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 group-hover:from-primary/30 group-hover:to-primary/10 transition-all duration-500">
+                  <Award className="h-8 w-8 text-primary" />
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground font-medium">Tier Saat Ini</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    {memberData?.current_tier || 'Bronze'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card className="group overflow-hidden border-2 hover:border-secondary/50 transition-all duration-500 hover:shadow-xl hover:scale-105 hover:-translate-y-1">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-secondary/20 to-secondary/5 group-hover:from-secondary/30 group-hover:to-secondary/10 transition-all duration-500">
-                    <ShoppingBag className="h-8 w-8 text-secondary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground font-medium">Total Pesanan</p>
-                    <p className="text-2xl font-bold text-foreground">
-                      {memberData.order_count}
-                    </p>
-                  </div>
+          <Card className="group overflow-hidden border-2 hover:border-secondary/50 transition-all duration-500 hover:shadow-xl hover:scale-105 hover:-translate-y-1">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-secondary/20 to-secondary/5 group-hover:from-secondary/30 group-hover:to-secondary/10 transition-all duration-500">
+                  <ShoppingBag className="h-8 w-8 text-secondary" />
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground font-medium">Total Pesanan</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {memberData?.order_count || 0}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card className="group overflow-hidden border-2 hover:border-accent/50 transition-all duration-500 hover:shadow-xl hover:scale-105 hover:-translate-y-1">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 group-hover:from-accent/30 group-hover:to-accent/10 transition-all duration-500">
-                    <TrendingUp className="h-8 w-8 text-accent" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground font-medium">Total Belanja</p>
-                    <p className="text-xl font-bold text-foreground">
-                      Rp {memberData.total_spending.toLocaleString('id-ID')}
-                    </p>
-                  </div>
+          <Card className="group overflow-hidden border-2 hover:border-accent/50 transition-all duration-500 hover:shadow-xl hover:scale-105 hover:-translate-y-1">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 group-hover:from-accent/30 group-hover:to-accent/10 transition-all duration-500">
+                  <TrendingUp className="h-8 w-8 text-accent" />
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground font-medium">Total Belanja</p>
+                  <p className="text-xl font-bold text-foreground">
+                    Rp {(memberData?.total_spending || 0).toLocaleString('id-ID')}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Tabs Section */}
         <Card className="border-2">
