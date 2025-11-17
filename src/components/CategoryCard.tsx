@@ -14,16 +14,16 @@ export const CategoryCard = ({ title, description, image, count, slug }: Categor
   const categoryLink = slug ? `/products?waterType=${slug}` : '/products';
   
   return (
-    <Link to={categoryLink}>
-      <Card className="group overflow-hidden border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-medium cursor-pointer">
-        <div className="relative h-48 overflow-hidden">
+    <Link to={categoryLink} className="block">
+      <Card className="group overflow-hidden border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-medium cursor-pointer h-full">
+        <div className="relative h-48 overflow-hidden touch-manipulation">
           <img
             src={image}
             alt={title}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 pointer-events-none"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-          <div className="absolute bottom-4 left-4 right-4">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
+          <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
             <h3 className="text-xl font-bold text-white mb-1">{title}</h3>
             <p className="text-sm text-white/90">{count} produk tersedia</p>
           </div>
