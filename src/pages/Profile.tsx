@@ -10,7 +10,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ProfileEditForm } from '@/components/profile/ProfileEditForm';
 import { AddressList } from '@/components/profile/AddressList';
-import { MemberProgress } from '@/components/profile/MemberProgress';
 import { ActivityTimeline } from '@/components/profile/ActivityTimeline';
 import { Loader2, User, Mail, Phone, Award, ShoppingBag, TrendingUp, MapPin, Clock } from 'lucide-react';
 
@@ -225,16 +224,8 @@ const Profile = () => {
         {/* Tabs Section */}
         <Card className="border-2">
           <CardContent className="p-6">
-            <Tabs defaultValue="member" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-8 p-1 bg-muted/30 rounded-xl h-auto gap-1">
-                <TabsTrigger 
-                  value="member" 
-                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg rounded-lg py-3 font-semibold transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm"
-                >
-                  <Award className="h-4 w-4" />
-                  <span className="hidden sm:inline">Member Progress</span>
-                  <span className="sm:hidden">Progress</span>
-                </TabsTrigger>
+            <Tabs defaultValue="activity" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-8 p-1 bg-muted/30 rounded-xl h-auto gap-1">
                 <TabsTrigger 
                   value="activity" 
                   className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg rounded-lg py-3 font-semibold transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm"
@@ -260,10 +251,6 @@ const Profile = () => {
                   <span className="sm:hidden">Alamat</span>
                 </TabsTrigger>
               </TabsList>
-              
-              <TabsContent value="member" className="mt-0 animate-fade-in">
-                <MemberProgress />
-              </TabsContent>
               
               <TabsContent value="activity" className="mt-0 animate-fade-in">
                 <ActivityTimeline />
