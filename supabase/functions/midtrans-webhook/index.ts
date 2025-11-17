@@ -21,12 +21,36 @@ interface MidtransNotification {
   signature_key: string;
 }
 
+// Simple in-memory rate limiting for webhook
+const webhookRequestLog = new Map<string, number[]>();
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Rate limiting: 100 requests per minute per IP
+    const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+    const now = Date.now();
+    const oneMinuteAgo = now - 60 * 1000;
+    
+    // Clean old entries
+    const ipRequests = webhookRequestLog.get(clientIp) || [];
+    const recentRequests = ipRequests.filter(timestamp => timestamp > oneMinuteAgo);
+    
+    if (recentRequests.length >= 100) {
+      console.log("Rate limit exceeded for IP:", clientIp);
+      return new Response(
+        JSON.stringify({ error: "Too many requests" }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+    
+    // Log this request
+    recentRequests.push(now);
+    webhookRequestLog.set(clientIp, recentRequests);
+    
     const notification: MidtransNotification = await req.json();
     
     console.log("Received Midtrans notification:", notification);

@@ -1,8 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const MIDTRANS_SERVER_KEY = Deno.env.get("MIDTRANS_SERVER_KEY");
 const MIDTRANS_BASE_URL = "https://app.midtrans.com/snap/v1/transactions";
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,6 +36,41 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const rawData = await req.json();
+    
+    // Extract user ID from authorization header
+    const authHeader = req.headers.get("authorization");
+    let userId: string | null = null;
+    
+    if (authHeader?.startsWith("Bearer ")) {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user } } = await supabase.auth.getUser(token);
+      userId = user?.id || null;
+      
+      // Rate limiting: Check recent transactions (10 per hour per user)
+      if (userId) {
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+        const { data: recentOrders } = await supabase
+          .from('orders')
+          .select('created_at')
+          .eq('user_id', userId)
+          .gte('created_at', oneHourAgo);
+        
+        if (recentOrders && recentOrders.length >= 10) {
+          console.log("Rate limit exceeded for user:", userId);
+          return new Response(
+            JSON.stringify({ 
+              error: "Terlalu banyak transaksi. Silakan coba lagi dalam 1 jam.",
+              retryAfter: 3600
+            }),
+            { 
+              status: 429, 
+              headers: { "Content-Type": "application/json", ...corsHeaders } 
+            }
+          );
+        }
+      }
+    }
     
     // Validate and sanitize input
     const parseResult = TransactionRequestSchema.safeParse(rawData);
