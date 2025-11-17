@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const MIDTRANS_SERVER_KEY = Deno.env.get("MIDTRANS_SERVER_KEY");
 const MIDTRANS_BASE_URL = "https://app.midtrans.com/snap/v1/transactions";
@@ -8,22 +9,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface TransactionRequest {
-  orderId: string;
-  orderNumber: string;
-  amount: number;
-  customerDetails: {
-    first_name: string;
-    email: string;
-    phone: string;
-  };
-  items: Array<{
-    id: string;
-    name: string;
-    price: number;
-    quantity: number;
-  }>;
-}
+const TransactionRequestSchema = z.object({
+  orderId: z.string().uuid({ message: "Invalid order ID" }),
+  orderNumber: z.string().min(1).max(100),
+  amount: z.number().positive({ message: "Amount must be positive" }).max(999999999),
+  customerDetails: z.object({
+    first_name: z.string().trim().min(1).max(100),
+    email: z.string().trim().email().max(255),
+    phone: z.string().trim().min(10).max(15)
+  }),
+  items: z.array(z.object({
+    id: z.string().min(1).max(100),
+    name: z.string().trim().min(1).max(255),
+    price: z.number().positive().max(999999999),
+    quantity: z.number().int().positive().max(9999)
+  })).min(1, { message: "At least one item is required" })
+});
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -31,7 +32,24 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { orderId, orderNumber, amount, customerDetails, items }: TransactionRequest = await req.json();
+    const rawData = await req.json();
+    
+    // Validate and sanitize input
+    const parseResult = TransactionRequestSchema.safeParse(rawData);
+    if (!parseResult.success) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid transaction data",
+          details: parseResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(", ")
+        }),
+        { 
+          status: 400, 
+          headers: { "Content-Type": "application/json", ...corsHeaders } 
+        }
+      );
+    }
+    
+    const { orderId, orderNumber, amount, customerDetails, items } = parseResult.data;
 
     // Create Midtrans transaction
     const authString = btoa(`${MIDTRANS_SERVER_KEY}:`);

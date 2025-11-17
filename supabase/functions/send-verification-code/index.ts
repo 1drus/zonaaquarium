@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const brevoApiKey = Deno.env.get("BREVO_API_KEY");
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -10,12 +11,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface VerificationRequest {
-  email: string;
-  fullName: string;
-  phone: string;
-  password: string;
-}
+const VerificationRequestSchema = z.object({
+  email: z.string().trim().email({ message: "Invalid email address" }).max(255),
+  fullName: z.string().trim().min(2, { message: "Name must be at least 2 characters" }).max(100),
+  phone: z.string().trim().regex(/^[0-9+\-\s()]*$/, { message: "Invalid phone number" }).min(10).max(15),
+  password: z.string().min(8, { message: "Password must be at least 8 characters" }).max(100)
+});
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -23,7 +24,24 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, fullName, phone, password }: VerificationRequest = await req.json();
+    const rawData = await req.json();
+    
+    // Validate and sanitize input
+    const parseResult = VerificationRequestSchema.safeParse(rawData);
+    if (!parseResult.success) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid input data",
+          details: parseResult.error.errors.map(e => e.message).join(", ")
+        }),
+        { 
+          status: 400, 
+          headers: { "Content-Type": "application/json", ...corsHeaders } 
+        }
+      );
+    }
+    
+    const { email, fullName, phone, password } = parseResult.data;
     
     console.log("Sending verification code to:", email);
     
