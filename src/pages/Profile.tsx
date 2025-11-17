@@ -132,28 +132,30 @@ const Profile = () => {
           <div className={`h-32 bg-gradient-to-br ${getTierColor(memberData?.current_tier || 'Bronze')} relative overflow-hidden`}>
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE0YzYuNjI3IDAgMTIgNS4zNzMgMTIgMTJzLTUuMzczIDEyLTEyIDEyLTEyLTUuMzczLTEyLTEyIDUuMzczLTEyIDEyLTEyIi8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
           </div>
-          <CardContent className="relative -mt-16 px-6 pb-6">
-            <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6">
+          <CardContent className="relative px-6 pb-6 pt-20">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
               {/* Avatar */}
-              <div className="relative group">
-                <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl group-hover:bg-primary/30 transition-all duration-500" />
-                <Avatar className="h-32 w-32 border-4 border-background shadow-2xl relative z-10 group-hover:scale-105 transition-transform duration-500">
-                  <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-primary to-secondary text-primary-foreground">
-                    {profile?.full_name ? getInitials(profile.full_name) : <User className="h-12 w-12" />}
-                  </AvatarFallback>
-                </Avatar>
-                <Badge className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1 shadow-lg bg-gradient-to-r from-primary via-secondary to-primary text-primary-foreground font-bold whitespace-nowrap">
+              <div className="relative flex flex-col items-center gap-3 -mt-20">
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl group-hover:bg-primary/30 transition-all duration-500" />
+                  <Avatar className="h-32 w-32 border-4 border-background shadow-2xl relative z-10 group-hover:scale-105 transition-transform duration-500">
+                    <AvatarImage src={profile?.avatar_url || undefined} />
+                    <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-primary to-secondary text-primary-foreground">
+                      {profile?.full_name ? getInitials(profile.full_name) : <User className="h-12 w-12" />}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <Badge className="px-4 py-1.5 shadow-lg bg-gradient-to-r from-primary via-secondary to-primary text-primary-foreground font-bold whitespace-nowrap">
                   {memberData?.current_tier || 'Bronze'}
                 </Badge>
               </div>
 
               {/* User Info */}
-              <div className="flex-1 text-center sm:text-left space-y-2">
+              <div className="flex-1 text-center sm:text-left space-y-3 sm:pt-0">
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
                   {profile?.full_name || 'User'}
                 </h1>
-                <div className="flex flex-col sm:flex-row gap-4 text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row gap-3 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2 justify-center sm:justify-start">
                     <Mail className="h-4 w-4 text-primary" />
                     <span>{user.email}</span>
