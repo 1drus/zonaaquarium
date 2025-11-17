@@ -12,33 +12,38 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload } from 'lucide-react';
-
 export function ProfileEditForm() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>('');
-  const { user, signOut } = useAuth();
-  const { toast } = useToast();
-  
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<ProfileFormData>({
+  const {
+    user,
+    signOut
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: {
+      errors
+    }
+  } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema)
   });
-
   useEffect(() => {
     if (user) {
       loadProfile();
     }
   }, [user]);
-
   const loadProfile = async () => {
     if (!user) return;
-    
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    
+    const {
+      data,
+      error
+    } = await supabase.from('profiles').select('*').eq('id', user.id).single();
     if (data && !error) {
       setValue('fullName', data.full_name || '');
       setValue('phone', data.phone || '');
@@ -46,23 +51,19 @@ export function ProfileEditForm() {
       setAvatarUrl(data.avatar_url || '');
     }
   };
-
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0 || !user) {
       return;
     }
-
     const file = event.target.files[0];
     const fileExt = file.name.split('.').pop();
     const filePath = `${user.id}/${Date.now()}.${fileExt}`;
-
     setUploading(true);
 
     // Upload to storage
-    const { error: uploadError } = await supabase.storage
-      .from('profile-images')
-      .upload(filePath, file);
-
+    const {
+      error: uploadError
+    } = await supabase.storage.from('profile-images').upload(filePath, file);
     if (uploadError) {
       toast({
         variant: "destructive",
@@ -74,16 +75,18 @@ export function ProfileEditForm() {
     }
 
     // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('profile-images')
-      .getPublicUrl(filePath);
+    const {
+      data: {
+        publicUrl
+      }
+    } = supabase.storage.from('profile-images').getPublicUrl(filePath);
 
     // Update profile with new avatar URL
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ avatar_url: publicUrl })
-      .eq('id', user.id);
-
+    const {
+      error: updateError
+    } = await supabase.from('profiles').update({
+      avatar_url: publicUrl
+    }).eq('id', user.id);
     if (updateError) {
       toast({
         variant: "destructive",
@@ -93,27 +96,21 @@ export function ProfileEditForm() {
     } else {
       setAvatarUrl(publicUrl);
       toast({
-        title: "Foto profil berhasil diupdate",
+        title: "Foto profil berhasil diupdate"
       });
     }
-
     setUploading(false);
   };
-
   const onSubmit = async (data: ProfileFormData) => {
     if (!user) return;
-    
     setLoading(true);
-    
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        full_name: data.fullName,
-        phone: data.phone || null,
-        bio: data.bio || null
-      })
-      .eq('id', user.id);
-
+    const {
+      error
+    } = await supabase.from('profiles').update({
+      full_name: data.fullName,
+      phone: data.phone || null,
+      bio: data.bio || null
+    }).eq('id', user.id);
     if (error) {
       toast({
         variant: "destructive",
@@ -122,19 +119,15 @@ export function ProfileEditForm() {
       });
     } else {
       toast({
-        title: "Profil berhasil diupdate",
+        title: "Profil berhasil diupdate"
       });
     }
-
     setLoading(false);
   };
-
   const handleLogout = async () => {
     await signOut();
   };
-
-  return (
-    <Card className="max-w-2xl">
+  return <Card className="max-w-2xl my-0 px-0 mx-[100px]">
       <CardHeader>
         <CardTitle>Edit Profil</CardTitle>
         <CardDescription>Update informasi profil Anda</CardDescription>
@@ -148,91 +141,50 @@ export function ProfileEditForm() {
           <div>
             <Label htmlFor="avatar" className="cursor-pointer">
               <div className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                {uploading ? (
-                  <>
+                {uploading ? <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Mengupload...
-                  </>
-                ) : (
-                  <>
+                  </> : <>
                     <Upload className="h-4 w-4" />
                     Ubah foto profil
-                  </>
-                )}
+                  </>}
               </div>
             </Label>
-            <Input
-              id="avatar"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarUpload}
-              disabled={uploading}
-            />
+            <Input id="avatar" type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
           </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              value={user?.email || ''}
-              disabled
-              className="bg-muted"
-            />
+            <Input id="email" value={user?.email || ''} disabled className="bg-muted" />
             <p className="text-xs text-muted-foreground">Email tidak dapat diubah</p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="fullName">Nama Lengkap</Label>
-            <Input
-              id="fullName"
-              {...register('fullName')}
-              disabled={loading}
-            />
-            {errors.fullName && (
-              <p className="text-sm text-destructive">{errors.fullName.message}</p>
-            )}
+            <Input id="fullName" {...register('fullName')} disabled={loading} />
+            {errors.fullName && <p className="text-sm text-destructive">{errors.fullName.message}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="phone">Nomor Telepon</Label>
-            <Input
-              id="phone"
-              type="tel"
-              {...register('phone')}
-              disabled={loading}
-            />
-            {errors.phone && (
-              <p className="text-sm text-destructive">{errors.phone.message}</p>
-            )}
+            <Input id="phone" type="tel" {...register('phone')} disabled={loading} />
+            {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="bio">Bio</Label>
-            <Textarea
-              id="bio"
-              placeholder="Ceritakan tentang diri Anda..."
-              rows={4}
-              {...register('bio')}
-              disabled={loading}
-            />
-            {errors.bio && (
-              <p className="text-sm text-destructive">{errors.bio.message}</p>
-            )}
+            <Textarea id="bio" placeholder="Ceritakan tentang diri Anda..." rows={4} {...register('bio')} disabled={loading} />
+            {errors.bio && <p className="text-sm text-destructive">{errors.bio.message}</p>}
           </div>
 
           <div className="flex gap-4">
             <Button type="submit" disabled={loading}>
-              {loading ? (
-                <>
+              {loading ? <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Menyimpan...
-                </>
-              ) : (
-                'Simpan Perubahan'
-              )}
+                </> : 'Simpan Perubahan'}
             </Button>
             
             <Button type="button" variant="outline" onClick={handleLogout}>
@@ -241,6 +193,5 @@ export function ProfileEditForm() {
           </div>
         </form>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }
