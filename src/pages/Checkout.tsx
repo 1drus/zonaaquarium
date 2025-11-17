@@ -182,6 +182,45 @@ export default function Checkout() {
     setSubmitting(true);
     
     try {
+      // Validate stock availability first
+      for (const item of cartItems) {
+        if (item.variant_id) {
+          // Check variant stock
+          const { data: variant, error } = await supabase
+            .from('product_variants')
+            .select('stock_quantity, variant_name')
+            .eq('id', item.variant_id)
+            .single();
+
+          if (error || !variant) {
+            throw new Error(`Produk ${item.products.name} tidak ditemukan`);
+          }
+
+          if (variant.stock_quantity < item.quantity) {
+            throw new Error(
+              `Stok ${item.products.name} (${variant.variant_name}) tidak mencukupi. Tersedia: ${variant.stock_quantity}, Diminta: ${item.quantity}`
+            );
+          }
+        } else {
+          // Check product stock
+          const { data: product, error } = await supabase
+            .from('products')
+            .select('stock_quantity, name')
+            .eq('id', item.product_id)
+            .single();
+
+          if (error || !product) {
+            throw new Error(`Produk tidak ditemukan`);
+          }
+
+          if ((product.stock_quantity || 0) < item.quantity) {
+            throw new Error(
+              `Stok ${product.name} tidak mencukupi. Tersedia: ${product.stock_quantity || 0}, Diminta: ${item.quantity}`
+            );
+          }
+        }
+      }
+
       const subtotal = calculateSubtotal();
       const voucherDiscount = calculateVoucherDiscount(subtotal);
       const totalAmount = subtotal - voucherDiscount + shippingCost;
@@ -331,12 +370,31 @@ export default function Checkout() {
       if (clearError) throw clearError;
 
       // Redirect to Midtrans payment page
-      window.location.href = midtransData.redirectUrl;
+      if (midtransData?.redirectUrl) {
+        window.location.href = midtransData.redirectUrl;
+      } else {
+        throw new Error('Gagal membuat transaksi pembayaran');
+      }
     } catch (error: any) {
+      console.error('Order creation error:', error);
+      
+      let errorMessage = error.message;
+      
+      // Handle specific error cases
+      if (error.message?.includes('stok') || error.message?.includes('stock')) {
+        errorMessage = error.message;
+      } else if (error.message?.includes('must be owner')) {
+        errorMessage = 'Terjadi kesalahan sistem. Silakan hubungi administrator.';
+      } else if (error.code === 'PGRST116') {
+        errorMessage = 'Data tidak valid. Silakan periksa kembali data pesanan Anda.';
+      } else if (!errorMessage || errorMessage === 'An error occurred') {
+        errorMessage = 'Gagal membuat pesanan. Silakan coba lagi.';
+      }
+
       toast({
         variant: 'destructive',
         title: 'Gagal membuat order',
-        description: error.message,
+        description: errorMessage,
       });
     } finally {
       setSubmitting(false);
