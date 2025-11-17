@@ -58,24 +58,38 @@ const getTierIcon = (iconName: string, className: string) => {
   return <Icon className={className} />;
 };
 
-const getTierGradient = (tierName: string) => {
-  const gradients = {
-    Bronze: 'from-amber-700 via-amber-500 to-amber-900',
-    Silver: 'from-gray-400 via-gray-200 to-gray-600',
-    Gold: 'from-yellow-500 via-yellow-300 to-yellow-600',
-    Platinum: 'from-indigo-400 via-purple-300 to-pink-400',
+const getTierColors = (tierName: string) => {
+  const colors = {
+    Bronze: {
+      bg: 'bg-gradient-to-br from-accent/10 via-accent/5 to-background',
+      border: 'border-accent/20',
+      ring: 'ring-accent/30',
+      badge: 'bg-accent text-accent-foreground',
+      glow: 'shadow-[0_0_20px_rgba(255,138,0,0.3)]'
+    },
+    Silver: {
+      bg: 'bg-gradient-to-br from-muted via-muted/50 to-background',
+      border: 'border-muted-foreground/20',
+      ring: 'ring-muted-foreground/30',
+      badge: 'bg-muted text-muted-foreground',
+      glow: 'shadow-[0_0_20px_rgba(148,163,184,0.3)]'
+    },
+    Gold: {
+      bg: 'bg-gradient-to-br from-accent-light/10 via-accent/5 to-background',
+      border: 'border-accent-light/20',
+      ring: 'ring-accent-light/30',
+      badge: 'bg-gradient-to-r from-accent via-accent-light to-accent text-accent-foreground',
+      glow: 'shadow-[0_0_20px_rgba(255,200,0,0.4)]'
+    },
+    Platinum: {
+      bg: 'bg-gradient-to-br from-primary-light/10 via-primary/5 to-background',
+      border: 'border-primary/20',
+      ring: 'ring-primary/30',
+      badge: 'bg-gradient-to-r from-primary via-primary-light to-primary text-primary-foreground',
+      glow: 'shadow-[0_0_25px_rgba(14,165,233,0.5)]'
+    },
   };
-  return gradients[tierName as keyof typeof gradients] || gradients.Bronze;
-};
-
-const getTierRing = (tierName: string) => {
-  const rings = {
-    Bronze: 'ring-amber-500/50',
-    Silver: 'ring-gray-400/50',
-    Gold: 'ring-yellow-400/50',
-    Platinum: 'ring-purple-400/50',
-  };
-  return rings[tierName as keyof typeof rings] || rings.Bronze;
+  return colors[tierName as keyof typeof colors] || colors.Bronze;
 };
 
 export const MemberProgress = () => {
@@ -265,10 +279,10 @@ export const MemberProgress = () => {
     : 0;
 
   return (
-    <Card className="overflow-hidden relative">
+    <Card className="overflow-hidden relative border-2 hover:border-primary/30 transition-all duration-500">
       {/* Background decoration */}
-      <div className="absolute inset-0 opacity-5">
-        <div className={`absolute inset-0 bg-gradient-to-br ${getTierGradient(progress.current_tier)}`} />
+      <div className="absolute inset-0 opacity-10">
+        <div className={`absolute inset-0 ${getTierColors(progress.current_tier).bg}`} />
       </div>
 
       <CardHeader className="relative">
@@ -287,26 +301,26 @@ export const MemberProgress = () => {
 
       <CardContent className="space-y-6 relative">
         {/* Current Tier Badge */}
-        <div className="flex items-center justify-center py-4">
-          <div className="relative">
-            {/* Outer glow ring */}
-            <div className={`absolute -inset-3 rounded-full ${getTierRing(progress.current_tier)} ring-4 animate-pulse`} />
+        <div className="flex items-center justify-center py-8">
+          <div className="relative group">
+            {/* Animated glow rings */}
+            <div className={`absolute -inset-4 rounded-full ${getTierColors(progress.current_tier).ring} ring-4 animate-pulse blur-md ${getTierColors(progress.current_tier).glow}`} />
+            <div className={`absolute -inset-3 rounded-full ${getTierColors(progress.current_tier).ring} ring-8 opacity-30 animate-ping`} />
             
             {/* Main badge with 3D effect */}
-            <div className={`relative p-10 rounded-full bg-gradient-to-br ${getTierGradient(progress.current_tier)} shadow-2xl transform transition-transform hover:scale-110 hover:rotate-12 duration-300`}>
+            <div className={`relative ${getTierColors(progress.current_tier).badge} p-10 rounded-full shadow-2xl transform transition-all duration-500 group-hover:scale-110 group-hover:rotate-6`}>
               {/* Shine effect */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/40 via-white/10 to-transparent opacity-80" />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/40 via-white/10 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
               
               {/* Inner shadow for depth */}
-              <div className="absolute inset-2 rounded-full shadow-inner bg-black/10" />
+              <div className="absolute inset-2 rounded-full shadow-inner bg-black/5" />
               
               {/* Animated sparkles */}
-              <div className="absolute top-2 right-2">
-                <Sparkles className="h-4 w-4 text-white/80 animate-pulse" />
-              </div>
+              <Sparkles className="absolute -top-3 -right-3 h-7 w-7 animate-pulse" />
+              <Sparkles className="absolute -bottom-3 -left-3 h-5 w-5 animate-pulse delay-100" />
               
               {/* Icon */}
-              {getTierIcon(currentTierConfig.badge_icon, 'h-20 w-20 text-white relative z-10 drop-shadow-lg')}
+              {getTierIcon(currentTierConfig.badge_icon, 'h-20 w-20 relative z-10 drop-shadow-2xl animate-bounce')}
             </div>
           </div>
         </div>
@@ -407,12 +421,12 @@ export const MemberProgress = () => {
         </div>
 
         {/* Benefits */}
-        <div className="space-y-3 p-4 rounded-xl bg-gradient-to-br from-accent/10 to-accent/5 border border-accent/20">
-          <div className="flex items-center gap-2">
-            <div className={`p-1.5 rounded-lg bg-gradient-to-br ${getTierGradient(progress.current_tier)}`}>
-              <Sparkles className="h-4 w-4 text-white" />
+        <div className="space-y-3 p-6 rounded-2xl bg-gradient-to-br from-accent/10 via-accent/5 to-background border-2 border-accent/20 hover:border-accent/40 transition-all duration-500 shadow-lg hover:shadow-xl">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-xl ${getTierColors(progress.current_tier).badge} shadow-md`}>
+              <Sparkles className="h-5 w-5" />
             </div>
-            <h4 className="font-semibold text-sm">Benefit {progress.current_tier}</h4>
+            <h4 className="font-bold text-base bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Benefit {progress.current_tier}</h4>
           </div>
           <ul className="space-y-2 text-sm">
             {currentTierConfig.discount_percentage > 0 && (
@@ -544,11 +558,11 @@ export const MemberProgress = () => {
               return (
                 <div
                   key={tier.tier_name}
-                  className={`group relative p-4 rounded-xl border-2 transition-all duration-300 ${
+                  className={`group relative p-5 rounded-2xl border-2 transition-all duration-500 hover:scale-105 hover:-translate-y-1 ${
                     isCurrentTier
-                      ? `border-primary bg-gradient-to-br ${getTierGradient(tier.tier_name)}/10 shadow-lg scale-105 ring-2 ${getTierRing(tier.tier_name)}`
+                      ? `${getTierColors(tier.tier_name).border} ${getTierColors(tier.tier_name).bg} shadow-xl ring-2 ${getTierColors(tier.tier_name).ring} ${getTierColors(tier.tier_name).glow}`
                       : isAchieved
-                      ? 'border-primary/30 bg-primary/5 hover:border-primary/50 hover:shadow-md'
+                      ? 'border-primary/30 bg-primary/5 hover:border-primary/50 hover:shadow-lg'
                       : 'border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40'
                   }`}
                 >
@@ -566,12 +580,12 @@ export const MemberProgress = () => {
                     </div>
                   )}
                   
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className={`p-2 rounded-lg bg-gradient-to-br ${getTierGradient(tier.tier_name)} ${isAchieved ? 'opacity-100' : 'opacity-40'}`}>
-                        {getTierIcon(tier.badge_icon, 'h-5 w-5 text-white')}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-3 rounded-xl ${getTierColors(tier.tier_name).badge} shadow-md transform transition-transform group-hover:scale-110 ${isAchieved ? 'opacity-100' : 'opacity-40'}`}>
+                        {getTierIcon(tier.badge_icon, 'h-6 w-6')}
                       </div>
-                      <span className={`font-bold text-sm ${isCurrentTier ? 'text-primary' : isAchieved ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      <span className={`font-bold text-base ${isCurrentTier ? 'bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent' : isAchieved ? 'text-foreground' : 'text-muted-foreground'}`}>
                         {tier.tier_name}
                       </span>
                     </div>
