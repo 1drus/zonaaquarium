@@ -72,7 +72,7 @@ export default function Checkout() {
   const [shippingMethod, setShippingMethod] = useState('');
   const [shippingMethodName, setShippingMethodName] = useState('');
   const [shippingCost, setShippingCost] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('midtrans');
   const [notes, setNotes] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(
     location.state?.voucher || null
@@ -84,6 +84,21 @@ export default function Checkout() {
       return;
     }
     loadCartItems();
+    
+    // Load Midtrans Snap script
+    const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY;
+    if (clientKey) {
+      const script = document.createElement('script');
+      script.src = 'https://app.midtrans.com/snap/snap.js';
+      script.setAttribute('data-client-key', clientKey);
+      document.body.appendChild(script);
+
+      return () => {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+      };
+    }
   }, [user, navigate]);
 
   const loadCartItems = async () => {
@@ -192,7 +207,7 @@ export default function Checkout() {
           subtotal: subtotal,
           discount_amount: voucherDiscount,
           total_amount: totalAmount,
-          payment_method: paymentMethod,
+          payment_method: 'midtrans',
           notes: notes || null,
           status: 'menunggu_pembayaran',
           payment_status: 'pending',
@@ -254,6 +269,59 @@ export default function Checkout() {
 
       if (itemsError) throw itemsError;
 
+      // Get user profile for Midtrans
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+      // Create Midtrans transaction
+      const items = cartItems.map(item => {
+        let price = item.products.price;
+        if (item.product_variants?.price_adjustment) {
+          price += item.product_variants.price_adjustment;
+        }
+        const discount = item.products.discount_percentage || 0;
+        const finalPrice = price - (price * discount / 100);
+
+        return {
+          id: item.product_id,
+          name: item.products.name,
+          price: finalPrice,
+          quantity: item.quantity,
+        };
+      });
+
+      // Add shipping as item
+      if (shippingCost > 0) {
+        items.push({
+          id: 'shipping',
+          name: `Ongkir - ${shippingMethodName}`,
+          price: shippingCost,
+          quantity: 1,
+        });
+      }
+
+      const { data: midtransData, error: midtransError } = await supabase.functions.invoke(
+        'create-midtrans-transaction',
+        {
+          body: {
+            orderId: orderData.id,
+            orderNumber: orderNumberData,
+            amount: totalAmount,
+            customerDetails: {
+              first_name: profileData?.full_name || selectedAddress.recipient_name,
+              email: user.email!,
+              phone: selectedAddress.phone,
+            },
+            items,
+          },
+        }
+      );
+
+      if (midtransError) throw midtransError;
+
       // Clear cart
       const { error: clearError } = await supabase
         .from('cart_items')
@@ -262,7 +330,8 @@ export default function Checkout() {
 
       if (clearError) throw clearError;
 
-      navigate(`/order-success/${orderData.id}`);
+      // Redirect to Midtrans payment page
+      window.location.href = midtransData.redirectUrl;
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -294,14 +363,6 @@ export default function Checkout() {
         variant: 'destructive',
         title: 'Pilih metode pengiriman',
         description: 'Silakan pilih metode pengiriman terlebih dahulu',
-      });
-      return;
-    }
-    if (currentStep === 3 && !paymentMethod) {
-      toast({
-        variant: 'destructive',
-        title: 'Pilih metode pembayaran',
-        description: 'Silakan pilih metode pembayaran terlebih dahulu',
       });
       return;
     }
