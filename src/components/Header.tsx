@@ -34,13 +34,13 @@ export const Header = ({ onSearch }: HeaderProps) => {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+        <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
           <img 
             src={zonaLogo} 
             alt="Zona Aquarium Logo" 
-            className="h-12 w-12 object-contain"
+            className="h-12 w-12 object-contain transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6"
           />
-          <span className="text-xl font-bold bg-gradient-ocean bg-clip-text text-transparent">
+          <span className="text-xl font-bold bg-gradient-ocean bg-clip-text text-transparent transition-all duration-300 group-hover:tracking-wide">
             Zona Aquarium
           </span>
         </div>
