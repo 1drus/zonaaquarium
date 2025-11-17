@@ -1,6 +1,6 @@
 import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShoppingCart, Search, Menu, Heart, Home, Package, User as UserIcon, ShoppingBag } from "lucide-react";
+import { ShoppingCart, Search, Menu, Heart, Home, Package, User as UserIcon, ShoppingBag, LayoutDashboard, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ export const Header = ({ onSearch }: HeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { cartCount } = useCart();
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user, signOut } = useAuth();
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -107,89 +107,153 @@ export const Header = ({ onSearch }: HeaderProps) => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{user.email}</p>
+                          {isAdmin && (
+                            <p className="text-xs text-muted-foreground">Admin</p>
+                          )}
                         </div>
                       </div>
                       <Separator />
                     </>
                   )}
                   
-                  {/* Navigation Links */}
-                  <Button
-                    variant="ghost"
-                    className="justify-start"
-                    onClick={() => {
-                      navigate('/');
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <Home className="mr-2 h-4 w-4" />
-                    Beranda
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    className="justify-start"
-                    onClick={() => {
-                      navigate('/products');
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <Package className="mr-2 h-4 w-4" />
-                    Produk
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    className="justify-start"
-                    onClick={() => {
-                      navigate('/wishlist');
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <Heart className="mr-2 h-4 w-4" />
-                    Wishlist
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    className="justify-start relative"
-                    onClick={() => {
-                      navigate('/orders');
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <ShoppingBag className="mr-2 h-4 w-4" />
-                    Pesanan Saya
-                  </Button>
-                  
-                  <Separator />
-                  
-                  {/* Profile & Logout */}
-                  {user ? (
+                  {/* Admin Menu */}
+                  {isAdmin ? (
                     <>
                       <Button
                         variant="ghost"
                         className="justify-start"
                         onClick={() => {
-                          navigate('/profile');
+                          navigate('/admin');
                           setMobileMenuOpen(false);
                         }}
                       >
-                        <UserIcon className="mr-2 h-4 w-4" />
-                        Profil Saya
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        Admin Dashboard
+                      </Button>
+                      
+                      <Separator />
+                      
+                      <Button
+                        variant="ghost"
+                        className="justify-start text-destructive hover:text-destructive"
+                        onClick={() => {
+                          signOut();
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Logout
                       </Button>
                     </>
                   ) : (
-                    <Button
-                      variant="default"
-                      className="w-full"
-                      onClick={() => {
-                        navigate('/auth');
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      Masuk / Daftar
-                    </Button>
+                    <>
+                      {/* Customer Navigation Links */}
+                      {user ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            className="justify-start"
+                            onClick={() => {
+                              navigate('/');
+                              setMobileMenuOpen(false);
+                            }}
+                          >
+                            <Home className="mr-2 h-4 w-4" />
+                            Beranda
+                          </Button>
+                          
+                          <Button
+                            variant="ghost"
+                            className="justify-start"
+                            onClick={() => {
+                              navigate('/products');
+                              setMobileMenuOpen(false);
+                            }}
+                          >
+                            <Package className="mr-2 h-4 w-4" />
+                            Produk
+                          </Button>
+                          
+                          <Button
+                            variant="ghost"
+                            className="justify-start"
+                            onClick={() => {
+                              navigate('/wishlist');
+                              setMobileMenuOpen(false);
+                            }}
+                          >
+                            <Heart className="mr-2 h-4 w-4" />
+                            Wishlist
+                          </Button>
+                          
+                          <Button
+                            variant="ghost"
+                            className="justify-start"
+                            onClick={() => {
+                              navigate('/cart');
+                              setMobileMenuOpen(false);
+                            }}
+                          >
+                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            Keranjang
+                            {cartCount > 0 && (
+                              <Badge className="ml-auto bg-accent text-accent-foreground">
+                                {cartCount}
+                              </Badge>
+                            )}
+                          </Button>
+                          
+                          <Button
+                            variant="ghost"
+                            className="justify-start"
+                            onClick={() => {
+                              navigate('/orders');
+                              setMobileMenuOpen(false);
+                            }}
+                          >
+                            <ShoppingBag className="mr-2 h-4 w-4" />
+                            Pesanan Saya
+                          </Button>
+                          
+                          <Separator />
+                          
+                          <Button
+                            variant="ghost"
+                            className="justify-start"
+                            onClick={() => {
+                              navigate('/profile');
+                              setMobileMenuOpen(false);
+                            }}
+                          >
+                            <UserIcon className="mr-2 h-4 w-4" />
+                            Profil Saya
+                          </Button>
+                          
+                          <Button
+                            variant="ghost"
+                            className="justify-start text-destructive hover:text-destructive"
+                            onClick={() => {
+                              signOut();
+                              setMobileMenuOpen(false);
+                            }}
+                          >
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Logout
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          variant="default"
+                          className="w-full"
+                          onClick={() => {
+                            navigate('/auth');
+                            setMobileMenuOpen(false);
+                          }}
+                        >
+                          Masuk / Daftar
+                        </Button>
+                      )}
+                    </>
                   )}
                 </div>
               </SheetContent>
