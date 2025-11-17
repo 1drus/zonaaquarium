@@ -453,7 +453,14 @@ export const MemberProgress = () => {
     const min = currentTierConfig.min_spending;
     const max = nextTierConfig.min_spending;
     
-    return Math.min(((current - min) / (max - min)) * 100, 100);
+    // Handle edge case where current spending is less than current tier min
+    if (current < min) return 0;
+    
+    // Handle edge case where current spending exceeds next tier min
+    if (current >= max) return 100;
+    
+    // Calculate progress within current tier range
+    return Math.max(0, Math.min(((current - min) / (max - min)) * 100, 100));
   };
 
   const formatCurrency = (amount: number) => {
@@ -483,7 +490,7 @@ export const MemberProgress = () => {
 
   const progressPercentage = calculateProgress();
   const remainingToNext = nextTierConfig 
-    ? nextTierConfig.min_spending - progress.total_spending 
+    ? Math.max(0, nextTierConfig.min_spending - progress.total_spending)
     : 0;
 
   return (
