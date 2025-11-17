@@ -3,18 +3,22 @@ import { HeroSection } from "@/components/HeroSection";
 import { CategoriesSection } from "@/components/CategoriesSection";
 import { FeaturedProducts } from "@/components/FeaturedProducts";
 import { Footer } from "@/components/Footer";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-1">
-        <HeroSection />
-        <CategoriesSection />
-        <FeaturedProducts />
-      </main>
-      <Footer />
-    </div>
+    <>
+      <LoadingScreen />
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1">
+          <HeroSection />
+          <CategoriesSection />
+          <FeaturedProducts />
+        </main>
+        <Footer />
+      </div>
+    </>
   );
 };
 
