@@ -132,7 +132,7 @@ const Profile = () => {
           <div className={`h-32 bg-gradient-to-br ${getTierColor(memberData?.current_tier || 'Bronze')} relative overflow-hidden`}>
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE0YzYuNjI3IDAgMTIgNS4zNzMgMTIgMTJzLTUuMzczIDEyLTEyIDEyLTEyLTUuMzczLTEyLTEyIDUuMzczLTEyIDEyLTEyIi8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
           </div>
-          <CardContent className="relative px-6 pb-6 pt-20">
+          <CardContent className="relative px-4 sm:px-6 pb-4 sm:pb-6 pt-20">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
               {/* Avatar */}
               <div className="relative flex flex-col items-center gap-3 -mt-20">
@@ -175,7 +175,7 @@ const Profile = () => {
         {/* Quick Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="group overflow-hidden border-2 hover:border-primary/50 transition-all duration-500 hover:shadow-xl hover:scale-105 hover:-translate-y-1">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-4">
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 group-hover:from-primary/30 group-hover:to-primary/10 transition-all duration-500">
                   <Award className="h-8 w-8 text-primary" />
@@ -191,7 +191,7 @@ const Profile = () => {
           </Card>
 
           <Card className="group overflow-hidden border-2 hover:border-secondary/50 transition-all duration-500 hover:shadow-xl hover:scale-105 hover:-translate-y-1">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-4">
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-secondary/20 to-secondary/5 group-hover:from-secondary/30 group-hover:to-secondary/10 transition-all duration-500">
                   <ShoppingBag className="h-8 w-8 text-secondary" />
@@ -207,7 +207,7 @@ const Profile = () => {
           </Card>
 
           <Card className="group overflow-hidden border-2 hover:border-accent/50 transition-all duration-500 hover:shadow-xl hover:scale-105 hover:-translate-y-1">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-4">
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 group-hover:from-accent/30 group-hover:to-accent/10 transition-all duration-500">
                   <TrendingUp className="h-8 w-8 text-accent" />
@@ -225,7 +225,7 @@ const Profile = () => {
 
         {/* Tabs Section */}
         <Card className="border-2">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <Tabs defaultValue="activity" className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-8 p-1 bg-muted/30 rounded-xl h-auto gap-1">
                 <TabsTrigger 
