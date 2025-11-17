@@ -121,21 +121,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Logout gagal",
-        description: error.message
-      });
-    } else {
+    try {
+      // Clear local session first
+      setSession(null);
+      setUser(null);
       setIsAdmin(false);
-      toast({
-        title: "Logout berhasil",
-        description: "Anda telah keluar dari akun"
-      });
-      // Redirect to homepage
+      
+      // Then try to sign out from server
+      const { error } = await supabase.auth.signOut();
+      
+      // Ignore "Session not found" errors as user is already logged out
+      if (error && !error.message?.includes('Session not found')) {
+        console.error('Logout error:', error);
+        toast({
+          variant: "destructive",
+          title: "Logout gagal",
+          description: error.message
+        });
+      } else {
+        toast({
+          title: "Logout berhasil",
+          description: "Anda telah keluar dari akun"
+        });
+        // Redirect to homepage
+        window.location.href = '/';
+      }
+    } catch (err) {
+      console.error('Unexpected logout error:', err);
+      // Still redirect even if there's an error
       window.location.href = '/';
     }
   };
