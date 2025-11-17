@@ -25,12 +25,30 @@ interface LowStockItem {
 
 export function LowStockAlerts() {
   const [threshold, setThreshold] = useState(10);
+  const [inputValue, setInputValue] = useState('10');
   const [items, setItems] = useState<LowStockItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadLowStockItems();
   }, [threshold]);
+
+  const handleThresholdChange = (value: string) => {
+    setInputValue(value);
+  };
+
+  const handleThresholdApply = () => {
+    const numValue = Number(inputValue);
+    if (numValue > 0 && numValue <= 100) {
+      setThreshold(numValue);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleThresholdApply();
+    }
+  };
 
   const loadLowStockItems = async () => {
     setLoading(true);
@@ -117,9 +135,12 @@ export function LowStockAlerts() {
                 type="number"
                 min="1"
                 max="100"
-                value={threshold}
-                onChange={(e) => setThreshold(Number(e.target.value))}
+                value={inputValue}
+                onChange={(e) => handleThresholdChange(e.target.value)}
+                onBlur={handleThresholdApply}
+                onKeyDown={handleKeyDown}
                 className="w-20"
+                placeholder="10"
               />
             </div>
           </div>
