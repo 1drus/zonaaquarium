@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const MIDTRANS_SERVER_KEY = Deno.env.get("MIDTRANS_SERVER_KEY");
-const MIDTRANS_BASE_URL = "https://app.midtrans.com/snap/v1/transactions";
+// Use sandbox URL for testing (change to app.midtrans.com for production)
+const MIDTRANS_BASE_URL = "https://app.sandbox.midtrans.com/snap/v1/transactions";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 
