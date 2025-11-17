@@ -1060,6 +1060,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_user_role_by_email: {
+        Args: { _email: string; _role: Database["public"]["Enums"]["app_role"] }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "customer"
