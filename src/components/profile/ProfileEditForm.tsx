@@ -127,8 +127,8 @@ export function ProfileEditForm() {
   const handleLogout = async () => {
     await signOut();
   };
-  return <Card className="max-w-2xl my-0 px-0 mx-[100px]">
-      <CardHeader>
+  return <Card>
+      <CardHeader className="p-4 sm:p-6">
         <CardTitle>Edit Profil</CardTitle>
         <CardDescription>Update informasi profil Anda</CardDescription>
       </CardHeader>
