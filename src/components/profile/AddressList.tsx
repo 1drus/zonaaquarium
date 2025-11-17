@@ -113,17 +113,9 @@ export function AddressList() {
   return (
     <>
       <Card className="max-w-4xl border-2">
-        <CardHeader className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="space-y-1">
-              <CardTitle className="text-xl sm:text-2xl">Alamat Pengiriman</CardTitle>
-              <CardDescription>Kelola alamat pengiriman Anda</CardDescription>
-            </div>
-            <Button onClick={handleAddNew} className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" />
-              Tambah Alamat
-            </Button>
-          </div>
+        <CardHeader>
+          <CardTitle className="text-xl sm:text-2xl">Alamat Pengiriman</CardTitle>
+          <CardDescription>Kelola alamat pengiriman Anda</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 p-4 sm:p-6">
           {addresses.length === 0 ? (
@@ -182,6 +174,12 @@ export function AddressList() {
                 </CardContent>
               </Card>
             ))
+          )}
+          {addresses.length > 0 && (
+            <Button onClick={handleAddNew} className="w-full sm:w-auto">
+              <Plus className="mr-2 h-4 w-4" />
+              Tambah Alamat Baru
+            </Button>
           )}
         </CardContent>
       </Card>
