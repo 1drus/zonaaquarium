@@ -1,9 +1,11 @@
 import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShoppingCart, Search, Menu, Heart } from "lucide-react";
+import { ShoppingCart, Search, Menu, Heart, Home, Package, User as UserIcon, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
 import { UserMenu } from "@/components/UserMenu";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,9 +16,10 @@ interface HeaderProps {
 
 export const Header = ({ onSearch }: HeaderProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { cartCount } = useCart();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -85,9 +88,113 @@ export const Header = ({ onSearch }: HeaderProps) => {
             <UserMenu />
           </div>
           {!isAdmin && (
-            <Button variant="ghost" size="icon" className="md:hidden">
-              <Menu className="h-5 w-5" />
-            </Button>
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                <SheetHeader>
+                  <SheetTitle>Menu</SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col gap-4 mt-6">
+                  {/* User Info */}
+                  {user && (
+                    <>
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <UserIcon className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{user.email}</p>
+                        </div>
+                      </div>
+                      <Separator />
+                    </>
+                  )}
+                  
+                  {/* Navigation Links */}
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    onClick={() => {
+                      navigate('/');
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <Home className="mr-2 h-4 w-4" />
+                    Beranda
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    onClick={() => {
+                      navigate('/products');
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <Package className="mr-2 h-4 w-4" />
+                    Produk
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    onClick={() => {
+                      navigate('/wishlist');
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <Heart className="mr-2 h-4 w-4" />
+                    Wishlist
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    className="justify-start relative"
+                    onClick={() => {
+                      navigate('/orders');
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <ShoppingBag className="mr-2 h-4 w-4" />
+                    Pesanan Saya
+                  </Button>
+                  
+                  <Separator />
+                  
+                  {/* Profile & Logout */}
+                  {user ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        className="justify-start"
+                        onClick={() => {
+                          navigate('/profile');
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        <UserIcon className="mr-2 h-4 w-4" />
+                        Profil Saya
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="default"
+                      className="w-full"
+                      onClick={() => {
+                        navigate('/auth');
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      Masuk / Daftar
+                    </Button>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
           )}
         </div>
       </div>
