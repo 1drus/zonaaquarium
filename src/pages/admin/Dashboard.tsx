@@ -17,6 +17,7 @@ import { AdvancedAnalytics } from '@/components/admin/AdvancedAnalytics';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { LowStockAlerts } from '@/components/admin/LowStockAlerts';
 import { SystemSettings } from '@/components/admin/SystemSettings';
+import { TierConfigManagement } from '@/components/admin/TierConfigManagement';
 import { Loader2, Shield } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -69,7 +70,7 @@ export default function AdminDashboard() {
 
           <Tabs defaultValue="stats" className="space-y-6">
             <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-              <TabsList className="inline-flex w-auto min-w-full md:grid md:w-full md:grid-cols-5 lg:grid-cols-11 gap-1">
+              <TabsList className="inline-flex w-auto min-w-full md:grid md:w-full md:grid-cols-6 lg:grid-cols-12 gap-1">
                 <TabsTrigger value="stats" className="whitespace-nowrap">Statistik</TabsTrigger>
                 <TabsTrigger value="analytics" className="whitespace-nowrap">Analytics</TabsTrigger>
                 <TabsTrigger value="products" className="whitespace-nowrap">Produk</TabsTrigger>
@@ -78,6 +79,7 @@ export default function AdminDashboard() {
                 <TabsTrigger value="payment" className="whitespace-nowrap">Pembayaran</TabsTrigger>
                 <TabsTrigger value="reviews" className="whitespace-nowrap">Reviews</TabsTrigger>
                 <TabsTrigger value="vouchers" className="whitespace-nowrap">Voucher</TabsTrigger>
+                <TabsTrigger value="tiers" className="whitespace-nowrap">Tier</TabsTrigger>
                 <TabsTrigger value="users" className="whitespace-nowrap">Users</TabsTrigger>
                 <TabsTrigger value="stock" className="whitespace-nowrap">Stok</TabsTrigger>
                 <TabsTrigger value="settings" className="whitespace-nowrap">Settings</TabsTrigger>
@@ -114,6 +116,10 @@ export default function AdminDashboard() {
 
             <TabsContent value="vouchers">
               <VoucherManagement />
+            </TabsContent>
+
+            <TabsContent value="tiers">
+              <TierConfigManagement />
             </TabsContent>
 
             <TabsContent value="users">
