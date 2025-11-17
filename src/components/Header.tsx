@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { UserMenu } from "@/components/UserMenu";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
+import zonaLogo from "@/assets/zona-aquarium-logo.png";
 
 interface HeaderProps {
   onSearch?: (search: string) => void;
@@ -33,10 +34,12 @@ export const Header = ({ onSearch }: HeaderProps) => {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-ocean">
-            <span className="text-xl font-bold text-primary-foreground">ZA</span>
-          </div>
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+          <img 
+            src={zonaLogo} 
+            alt="Zona Aquarium Logo" 
+            className="h-12 w-12 object-contain"
+          />
           <span className="text-xl font-bold bg-gradient-ocean bg-clip-text text-transparent">
             Zona Aquarium
           </span>
