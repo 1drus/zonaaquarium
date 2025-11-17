@@ -87,13 +87,12 @@ export const Header = ({ onSearch }: HeaderProps) => {
           <div className="hidden md:flex">
             <UserMenu />
           </div>
-          {!isAdmin && (
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                 <SheetHeader>
                   <SheetTitle>Menu</SheetTitle>
@@ -195,7 +194,6 @@ export const Header = ({ onSearch }: HeaderProps) => {
                 </div>
               </SheetContent>
             </Sheet>
-          )}
         </div>
       </div>
 
