@@ -14,6 +14,8 @@ interface Product {
   stock_quantity: number;
   rating_average: number | null;
   review_count: number;
+  created_at: string;
+  categories: { name: string } | null;
   product_images: Array<{
     image_url: string;
     is_primary: boolean;
@@ -52,6 +54,8 @@ export function ProductGrid({ filters }: ProductGridProps) {
         stock_quantity,
         rating_average,
         review_count,
+        created_at,
+        categories(name),
         product_images!inner(image_url, is_primary)
       `, { count: 'exact' })
       .eq('is_active', true);
@@ -156,11 +160,14 @@ export function ProductGrid({ filters }: ProductGridProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {products.map((product) => {
         const primaryImage = product.product_images.find(img => img.is_primary);
-        const imageUrl = primaryImage?.image_url || product.product_images[0]?.image_url;
+        const imageUrl = primaryImage?.image_url || product.product_images[0]?.image_url || '/placeholder.svg';
         const finalPrice = product.discount_percentage
           ? product.price * (1 - product.discount_percentage / 100)
           : product.price;
         const originalPrice = product.discount_percentage ? product.price : undefined;
+        
+        // Check if product is new (created within last 7 days)
+        const isNew = new Date(product.created_at).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000;
 
         return (
           <ProductCard
@@ -173,9 +180,10 @@ export function ProductGrid({ filters }: ProductGridProps) {
             image={imageUrl}
             rating={product.rating_average || 0}
             reviews={product.review_count}
-            category="Ikan Hias"
+            category={product.categories?.name || 'Produk'}
             discount={product.discount_percentage || undefined}
             inStock={product.stock_quantity > 0}
+            isNew={isNew}
           />
         );
       })}
