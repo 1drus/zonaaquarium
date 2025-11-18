@@ -38,7 +38,7 @@ export const Header = ({ onSearch }: HeaderProps) => {
           <img 
             src={zonaLogo} 
             alt="Zona Aquarium Logo" 
-            className="h-16 md:h-20 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+            className="h-16 md:h-20 w-auto object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-sm"
           />
         </div>
 
