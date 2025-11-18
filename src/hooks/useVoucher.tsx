@@ -17,7 +17,6 @@ interface Voucher {
   valid_from: string;
   valid_until: string;
   is_active: boolean | null;
-  allowed_tiers: string[] | null;
 }
 
 export function useVoucher() {
@@ -90,25 +89,6 @@ export function useVoucher() {
 
         if (count && count >= voucher.user_usage_limit) {
           toast.error('Anda sudah mencapai batas penggunaan voucher ini');
-          return null;
-        }
-      }
-
-      // Check tier restriction
-      if (user && voucher.allowed_tiers && voucher.allowed_tiers.length > 0) {
-        const { data: memberProgress } = await supabase
-          .from('member_progress')
-          .select('current_tier')
-          .eq('user_id', user.id)
-          .single();
-
-        if (!memberProgress) {
-          toast.error('Data member tidak ditemukan');
-          return null;
-        }
-
-        if (!voucher.allowed_tiers.includes(memberProgress.current_tier)) {
-          toast.error(`Voucher ini hanya untuk tier: ${voucher.allowed_tiers.join(', ')}`);
           return null;
         }
       }

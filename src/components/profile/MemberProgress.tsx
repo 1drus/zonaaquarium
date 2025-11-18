@@ -9,7 +9,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
-import { TierVoucherInfo } from './TierVoucherInfo';
 import confetti from 'canvas-confetti';
 
 interface TierConfig {
@@ -410,21 +409,6 @@ export const MemberProgress = () => {
 
       if (error) throw error;
       setTierVouchers(data || []);
-
-      // Check for unnotified vouchers and show them
-      if (data && data.length > 0) {
-        const unnotifiedVouchers = data.filter(v => !v.is_notified);
-        
-        for (const voucher of unnotifiedVouchers) {
-          await showVoucherNotification(voucher);
-          
-          // Mark as notified
-          await supabase
-            .from('user_tier_vouchers')
-            .update({ is_notified: true })
-            .eq('id', voucher.id);
-        }
-      }
     } catch (error) {
       console.error('Error loading tier vouchers:', error);
     }
@@ -842,17 +826,8 @@ export const MemberProgress = () => {
                 <span><strong className="text-primary">Early access</strong> ke produk baru</span>
               </li>
             )}
-            <li className="flex items-center gap-3 p-2 rounded-lg bg-background/50 hover:bg-background/80 transition-colors">
-              <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
-                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-              </div>
-              <span><strong className="text-primary">Voucher eksklusif otomatis</strong> saat naik tier</span>
-            </li>
           </ul>
         </div>
-
-        {/* Tier Voucher Info */}
-        {currentTierConfig.tier_level >= 2 && <TierVoucherInfo />}
 
         {/* Tier Exclusive Vouchers */}
         {tierVouchers.length > 0 && (

@@ -43,7 +43,6 @@ interface Voucher {
   valid_until: string;
   is_active: boolean | null;
   created_at: string;
-  allowed_tiers: string[] | null;
 }
 
 export function VoucherManagement() {
@@ -185,7 +184,6 @@ export function VoucherManagement() {
                   <TableHead>Deskripsi</TableHead>
                   <TableHead>Diskon</TableHead>
                   <TableHead>Min. Belanja</TableHead>
-                  <TableHead>Tier</TableHead>
                   <TableHead>Penggunaan</TableHead>
                   <TableHead>Berlaku</TableHead>
                   <TableHead>Status</TableHead>
@@ -195,7 +193,7 @@ export function VoucherManagement() {
               <TableBody>
                 {filteredVouchers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                       Tidak ada voucher
                     </TableCell>
                   </TableRow>
@@ -217,19 +215,6 @@ export function VoucherManagement() {
                         {voucher.min_purchase
                           ? `Rp ${voucher.min_purchase.toLocaleString('id-ID')}`
                           : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {voucher.allowed_tiers && voucher.allowed_tiers.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {voucher.allowed_tiers.map((tier) => (
-                              <Badge key={tier} variant="outline" className="text-xs">
-                                {tier}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">Semua Tier</span>
-                        )}
                       </TableCell>
                       <TableCell>
                         {voucher.usage_count || 0}
