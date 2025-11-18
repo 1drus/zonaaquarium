@@ -42,9 +42,44 @@ export const Header = ({ onSearch }: HeaderProps) => {
           />
         </div>
 
+        {/* Desktop Navigation - Hidden for admin */}
+        {!isAdmin && (
+          <nav className="hidden md:flex items-center gap-1 mx-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/')}
+              className="text-sm"
+            >
+              <Home className="mr-1.5 h-4 w-4" />
+              Beranda
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/products')}
+              className="text-sm"
+            >
+              <Package className="mr-1.5 h-4 w-4" />
+              Produk
+            </Button>
+            {user && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/orders')}
+                className="text-sm"
+              >
+                <ShoppingBag className="mr-1.5 h-4 w-4" />
+                Pesanan
+              </Button>
+            )}
+          </nav>
+        )}
+
         {/* Search Bar - Hidden on mobile and for admin */}
         {!isAdmin && (
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
+          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
