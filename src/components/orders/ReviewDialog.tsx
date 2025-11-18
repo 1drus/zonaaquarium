@@ -253,7 +253,7 @@ export function ReviewDialog({ open, onClose, orderItem, orderId }: ReviewDialog
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={onClose}>
+      <Drawer open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
         <DrawerContent className="max-h-[95vh]">
           <DrawerHeader className="text-left">
             <DrawerTitle>Tulis Review</DrawerTitle>
@@ -267,7 +267,7 @@ export function ReviewDialog({ open, onClose, orderItem, orderId }: ReviewDialog
   }
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Tulis Review</DialogTitle>
