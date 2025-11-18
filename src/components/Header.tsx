@@ -32,17 +32,14 @@ export const Header = ({ onSearch }: HeaderProps) => {
   };
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+      <div className="container flex h-20 md:h-24 items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
+        <div className="cursor-pointer group" onClick={() => navigate('/')}>
           <img 
             src={zonaLogo} 
             alt="Zona Aquarium Logo" 
-            className="h-12 w-12 object-contain transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6"
+            className="h-16 md:h-20 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
           />
-          <span className="text-xl font-bold bg-gradient-ocean bg-clip-text text-transparent transition-all duration-300 group-hover:tracking-wide">
-            Zona Aquarium
-          </span>
         </div>
 
         {/* Search Bar - Hidden on mobile and for admin */}
