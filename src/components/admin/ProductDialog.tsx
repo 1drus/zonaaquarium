@@ -433,6 +433,108 @@ export function ProductDialog({ open, onClose, product }: ProductDialogProps) {
                 onChange={(e) => setFormData({ ...formData, origin: e.target.value })}
               />
             </div>
+
+            <div>
+              <Label htmlFor="water_type">Tipe Air</Label>
+              <Select value={formData.water_type} onValueChange={(value) => setFormData({ ...formData, water_type: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih tipe air" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tawar">Air Tawar</SelectItem>
+                  <SelectItem value="laut">Air Laut</SelectItem>
+                  <SelectItem value="payau">Air Payau</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="difficulty_level">Tingkat Kesulitan</Label>
+              <Select value={formData.difficulty_level} onValueChange={(value) => setFormData({ ...formData, difficulty_level: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih tingkat" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mudah">Mudah</SelectItem>
+                  <SelectItem value="sedang">Sedang</SelectItem>
+                  <SelectItem value="sulit">Sulit</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="temperature_min">Suhu Min (°C)</Label>
+              <Input
+                id="temperature_min"
+                type="number"
+                step="0.1"
+                value={formData.temperature_min}
+                onChange={(e) => setFormData({ ...formData, temperature_min: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="temperature_max">Suhu Max (°C)</Label>
+              <Input
+                id="temperature_max"
+                type="number"
+                step="0.1"
+                value={formData.temperature_max}
+                onChange={(e) => setFormData({ ...formData, temperature_max: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="ph_min">pH Min</Label>
+              <Input
+                id="ph_min"
+                type="number"
+                step="0.1"
+                value={formData.ph_min}
+                onChange={(e) => setFormData({ ...formData, ph_min: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="ph_max">pH Max</Label>
+              <Input
+                id="ph_max"
+                type="number"
+                step="0.1"
+                value={formData.ph_max}
+                onChange={(e) => setFormData({ ...formData, ph_max: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="min_order">Min Order</Label>
+              <Input
+                id="min_order"
+                type="number"
+                value={formData.min_order}
+                onChange={(e) => setFormData({ ...formData, min_order: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="max_order">Max Order</Label>
+              <Input
+                id="max_order"
+                type="number"
+                value={formData.max_order}
+                onChange={(e) => setFormData({ ...formData, max_order: e.target.value })}
+              />
+            </div>
+
+            <div className="col-span-2">
+              <Label htmlFor="care_instructions">Instruksi Perawatan</Label>
+              <Textarea
+                id="care_instructions"
+                value={formData.care_instructions}
+                onChange={(e) => setFormData({ ...formData, care_instructions: e.target.value })}
+                rows={3}
+              />
+            </div>
           </div>
 
                 <div className="flex justify-end gap-2 pt-4">
@@ -569,6 +671,108 @@ export function ProductDialog({ open, onClose, product }: ProductDialogProps) {
                   id="origin"
                   value={formData.origin}
                   onChange={(e) => setFormData({ ...formData, origin: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="water_type">Tipe Air</Label>
+                <Select value={formData.water_type} onValueChange={(value) => setFormData({ ...formData, water_type: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih tipe air" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tawar">Air Tawar</SelectItem>
+                    <SelectItem value="laut">Air Laut</SelectItem>
+                    <SelectItem value="payau">Air Payau</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="difficulty_level">Tingkat Kesulitan</Label>
+                <Select value={formData.difficulty_level} onValueChange={(value) => setFormData({ ...formData, difficulty_level: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih tingkat" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mudah">Mudah</SelectItem>
+                    <SelectItem value="sedang">Sedang</SelectItem>
+                    <SelectItem value="sulit">Sulit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="temperature_min">Suhu Min (°C)</Label>
+                <Input
+                  id="temperature_min"
+                  type="number"
+                  step="0.1"
+                  value={formData.temperature_min}
+                  onChange={(e) => setFormData({ ...formData, temperature_min: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="temperature_max">Suhu Max (°C)</Label>
+                <Input
+                  id="temperature_max"
+                  type="number"
+                  step="0.1"
+                  value={formData.temperature_max}
+                  onChange={(e) => setFormData({ ...formData, temperature_max: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="ph_min">pH Min</Label>
+                <Input
+                  id="ph_min"
+                  type="number"
+                  step="0.1"
+                  value={formData.ph_min}
+                  onChange={(e) => setFormData({ ...formData, ph_min: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="ph_max">pH Max</Label>
+                <Input
+                  id="ph_max"
+                  type="number"
+                  step="0.1"
+                  value={formData.ph_max}
+                  onChange={(e) => setFormData({ ...formData, ph_max: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="min_order">Min Order</Label>
+                <Input
+                  id="min_order"
+                  type="number"
+                  value={formData.min_order}
+                  onChange={(e) => setFormData({ ...formData, min_order: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="max_order">Max Order</Label>
+                <Input
+                  id="max_order"
+                  type="number"
+                  value={formData.max_order}
+                  onChange={(e) => setFormData({ ...formData, max_order: e.target.value })}
+                />
+              </div>
+
+              <div className="col-span-2">
+                <Label htmlFor="care_instructions">Instruksi Perawatan</Label>
+                <Textarea
+                  id="care_instructions"
+                  value={formData.care_instructions}
+                  onChange={(e) => setFormData({ ...formData, care_instructions: e.target.value })}
+                  rows={3}
                 />
               </div>
             </div>
