@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -23,6 +24,7 @@ interface Voucher {
   valid_from: string;
   valid_until: string;
   is_active: boolean;
+  allowed_tiers: string[] | null;
 }
 
 interface VoucherDialogProps {
@@ -34,6 +36,7 @@ interface VoucherDialogProps {
 
 export function VoucherDialog({ open, onOpenChange, voucher, onSuccess }: VoucherDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [tiers, setTiers] = useState<{ tier_name: string }[]>([]);
   const [formData, setFormData] = useState<Voucher>({
     code: '',
     description: '',
@@ -46,7 +49,12 @@ export function VoucherDialog({ open, onOpenChange, voucher, onSuccess }: Vouche
     valid_from: new Date().toISOString().split('T')[0],
     valid_until: '',
     is_active: true,
+    allowed_tiers: null,
   });
+
+  useEffect(() => {
+    loadTiers();
+  }, []);
 
   useEffect(() => {
     if (voucher) {
@@ -68,9 +76,24 @@ export function VoucherDialog({ open, onOpenChange, voucher, onSuccess }: Vouche
         valid_from: new Date().toISOString().split('T')[0],
         valid_until: '',
         is_active: true,
+        allowed_tiers: null,
       });
     }
   }, [voucher, open]);
+
+  const loadTiers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('member_tier_config')
+        .select('tier_name')
+        .order('tier_level', { ascending: true });
+
+      if (error) throw error;
+      setTiers(data || []);
+    } catch (error) {
+      console.error('Error loading tiers:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +112,7 @@ export function VoucherDialog({ open, onOpenChange, voucher, onSuccess }: Vouche
         valid_from: new Date(formData.valid_from).toISOString(),
         valid_until: new Date(formData.valid_until).toISOString(),
         is_active: formData.is_active,
+        allowed_tiers: formData.allowed_tiers,
       };
 
       if (voucher?.id) {
@@ -235,6 +259,39 @@ export function VoucherDialog({ open, onOpenChange, voucher, onSuccess }: Vouche
               placeholder="Tidak dibatasi"
               min="1"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="allowed_tiers">Tier yang Diizinkan</Label>
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Kosongkan untuk semua tier, atau pilih tier tertentu
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {tiers.map((tier) => (
+                  <div key={tier.tier_name} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`tier-${tier.tier_name}`}
+                      checked={formData.allowed_tiers?.includes(tier.tier_name) || false}
+                      onCheckedChange={(checked) => {
+                        setFormData({
+                          ...formData,
+                          allowed_tiers: checked
+                            ? [...(formData.allowed_tiers || []), tier.tier_name]
+                            : (formData.allowed_tiers || []).filter(t => t !== tier.tier_name)
+                        });
+                      }}
+                    />
+                    <Label 
+                      htmlFor={`tier-${tier.tier_name}`}
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      {tier.tier_name}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

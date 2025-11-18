@@ -932,6 +932,7 @@ export type Database = {
       }
       vouchers: {
         Row: {
+          allowed_tiers: string[] | null
           code: string
           created_at: string
           description: string | null
@@ -949,6 +950,7 @@ export type Database = {
           valid_until: string
         }
         Insert: {
+          allowed_tiers?: string[] | null
           code: string
           created_at?: string
           description?: string | null
@@ -966,6 +968,7 @@ export type Database = {
           valid_until: string
         }
         Update: {
+          allowed_tiers?: string[] | null
           code?: string
           created_at?: string
           description?: string | null
