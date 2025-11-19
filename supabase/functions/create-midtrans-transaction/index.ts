@@ -76,27 +76,38 @@ const handler = async (req: Request): Promise<Response> => {
       const { data: { user } } = await supabase.auth.getUser(token);
       userId = user?.id || null;
       
-      // Rate limiting: Check recent transactions (10 per hour per user)
+      // Rate limiting: Check recent transactions (10 per hour per user) - Only in production
       if (userId) {
-        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-        const { data: recentOrders } = await supabase
-          .from('orders')
-          .select('created_at')
-          .eq('user_id', userId)
-          .gte('created_at', oneHourAgo);
+        const { data: envConfig } = await supabase
+          .from('system_config')
+          .select('config_value')
+          .eq('config_key', 'midtrans_environment')
+          .single();
         
-        if (recentOrders && recentOrders.length >= 10) {
-          console.log("Rate limit exceeded for user:", userId);
-          return new Response(
-            JSON.stringify({ 
-              error: "Terlalu banyak transaksi. Silakan coba lagi dalam 1 jam.",
-              retryAfter: 3600
-            }),
-            { 
-              status: 429, 
-              headers: { "Content-Type": "application/json", ...corsHeaders } 
-            }
-          );
+        const isProduction = envConfig?.config_value === 'production';
+        
+        // Only apply rate limiting in production environment
+        if (isProduction) {
+          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+          const { data: recentOrders } = await supabase
+            .from('orders')
+            .select('created_at')
+            .eq('user_id', userId)
+            .gte('created_at', oneHourAgo);
+          
+          if (recentOrders && recentOrders.length >= 10) {
+            console.log("Rate limit exceeded for user:", userId);
+            return new Response(
+              JSON.stringify({ 
+                error: "Terlalu banyak transaksi. Silakan coba lagi dalam 1 jam.",
+                retryAfter: 3600
+              }),
+              { 
+                status: 429, 
+                headers: { "Content-Type": "application/json", ...corsHeaders } 
+              }
+            );
+          }
         }
       }
     }
