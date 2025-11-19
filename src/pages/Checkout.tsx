@@ -342,6 +342,16 @@ export default function Checkout() {
         });
       }
 
+      // Add voucher discount as negative item if applied
+      if (voucherDiscount > 0 && appliedVoucher) {
+        items.push({
+          id: 'voucher',
+          name: `Diskon Voucher - ${appliedVoucher.code}`,
+          price: -voucherDiscount,
+          quantity: 1,
+        });
+      }
+
       const { data: midtransData, error: midtransError } = await supabase.functions.invoke(
         'create-midtrans-transaction',
         {

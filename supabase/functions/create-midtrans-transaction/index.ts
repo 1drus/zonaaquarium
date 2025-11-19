@@ -124,18 +124,29 @@ const handler = async (req: Request): Promise<Response> => {
     // Create Midtrans transaction
     const authString = btoa(`${MIDTRANS_SERVER_KEY}:`);
     
+    // Map items and calculate gross_amount from item_details to ensure they match
+    const itemDetails = items.map(item => ({
+      id: item.id,
+      price: Math.round(item.price),
+      quantity: item.quantity,
+      name: item.name,
+    }));
+    
+    // Calculate gross_amount from sum of (price * quantity) for all items
+    const calculatedGrossAmount = itemDetails.reduce(
+      (sum, item) => sum + (item.price * item.quantity), 
+      0
+    );
+    
+    console.log(`Calculated gross_amount: ${calculatedGrossAmount}, Passed amount: ${Math.round(amount)}`);
+    
     const transactionData = {
       transaction_details: {
         order_id: orderId,
-        gross_amount: Math.round(amount),
+        gross_amount: calculatedGrossAmount,
       },
       customer_details: customerDetails,
-      item_details: items.map(item => ({
-        id: item.id,
-        price: Math.round(item.price),
-        quantity: item.quantity,
-        name: item.name,
-      })),
+      item_details: itemDetails,
       credit_card: {
         secure: true,
       },
