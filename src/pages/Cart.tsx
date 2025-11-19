@@ -135,6 +135,14 @@ const Cart = () => {
 
   const calculateSubtotal = () => {
     return cartItems.reduce((sum, item) => {
+      // Check if item is out of stock
+      const actualStock = item.product_variants 
+        ? item.product_variants.stock_quantity 
+        : item.product.stock_quantity;
+      
+      // Skip items that are out of stock
+      if (actualStock <= 0) return sum;
+      
       let price = item.product.price;
       
       // Add variant price adjustment if exists
@@ -149,6 +157,15 @@ const Cart = () => {
       
       return sum + price * item.quantity;
     }, 0);
+  };
+
+  const getOutOfStockCount = () => {
+    return cartItems.filter(item => {
+      const actualStock = item.product_variants 
+        ? item.product_variants.stock_quantity 
+        : item.product.stock_quantity;
+      return actualStock <= 0;
+    }).length;
   };
 
   if (loading) {
@@ -226,7 +243,10 @@ const Cart = () => {
 
           {/* Cart Summary */}
           <div className="lg:col-span-1">
-            <CartSummary subtotal={calculateSubtotal()} />
+            <CartSummary 
+              subtotal={calculateSubtotal()} 
+              outOfStockCount={getOutOfStockCount()}
+            />
           </div>
         </div>
       </main>
