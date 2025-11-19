@@ -118,6 +118,16 @@ const handler = async (req: Request): Promise<Response> => {
     
     const { orderId, orderNumber, amount, customerDetails, items } = parseResult.data;
 
+    // Format phone number for Indonesia (add +62 if needed)
+    let formattedPhone = customerDetails.phone.replace(/\D/g, ''); // Remove non-digits
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '62' + formattedPhone.substring(1);
+    } else if (!formattedPhone.startsWith('62')) {
+      formattedPhone = '62' + formattedPhone;
+    }
+    
+    console.log('Customer phone formatted:', customerDetails.phone, '->', formattedPhone);
+
     // Get Midtrans URL based on environment config
     const MIDTRANS_BASE_URL = await getMidtransConfig();
 
@@ -145,15 +155,39 @@ const handler = async (req: Request): Promise<Response> => {
         order_id: orderId,
         gross_amount: calculatedGrossAmount,
       },
-      customer_details: customerDetails,
+      customer_details: {
+        first_name: customerDetails.first_name,
+        email: customerDetails.email,
+        phone: formattedPhone,
+      },
       item_details: itemDetails,
       credit_card: {
         secure: true,
       },
+      enabled_payments: [
+        "credit_card",
+        "bca_va",
+        "bni_va", 
+        "bri_va",
+        "echannel", // Mandiri Bill
+        "permata_va",
+        "other_va",
+        "gopay",
+        "shopeepay",
+        "qris"
+      ],
       callbacks: {
         finish: `${req.headers.get('origin')}/order-success/${orderId}`,
       },
     };
+
+    console.log('Sending transaction data to Midtrans:', JSON.stringify({
+      ...transactionData,
+      customer_details: {
+        ...transactionData.customer_details,
+        phone: formattedPhone
+      }
+    }));
 
     const response = await fetch(MIDTRANS_BASE_URL, {
       method: "POST",
@@ -168,9 +202,11 @@ const handler = async (req: Request): Promise<Response> => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Midtrans API error:", data);
+      console.error("Midtrans API error:", JSON.stringify(data));
       throw new Error(data.error_messages?.join(", ") || "Failed to create transaction");
     }
+    
+    console.log('Midtrans response:', JSON.stringify(data));
 
     return new Response(
       JSON.stringify({ 
