@@ -11,11 +11,13 @@ import { Badge } from '@/components/ui/badge';
 interface CartSummaryProps {
   subtotal: number;
   shippingCost?: number;
+  outOfStockCount?: number;
 }
 
 export function CartSummary({
   subtotal,
   shippingCost = 0,
+  outOfStockCount = 0,
 }: CartSummaryProps) {
   const navigate = useNavigate();
   const [voucherCode, setVoucherCode] = useState('');
@@ -105,6 +107,18 @@ export function CartSummary({
         </div>
 
         <Separator />
+
+        {/* Out of Stock Warning */}
+        {outOfStockCount > 0 && (
+          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <p className="text-sm text-destructive font-medium">
+              ⚠️ {outOfStockCount} produk stok habis
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Produk yang habis tidak termasuk dalam total belanja
+            </p>
+          </div>
+        )}
 
         {/* Total */}
         <div className="flex justify-between items-center text-lg font-bold">
