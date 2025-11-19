@@ -205,19 +205,19 @@ export function ProductFilters({ filters, onFilterChange }: ProductFiltersProps)
               </Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="Tawar" id="water-tawar" />
+              <RadioGroupItem value="tawar" id="water-tawar" />
               <Label htmlFor="water-tawar" className="font-normal cursor-pointer">
                 Air Tawar
               </Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="Laut" id="water-laut" />
+              <RadioGroupItem value="laut" id="water-laut" />
               <Label htmlFor="water-laut" className="font-normal cursor-pointer">
                 Air Laut
               </Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="Payau" id="water-payau" />
+              <RadioGroupItem value="payau" id="water-payau" />
               <Label htmlFor="water-payau" className="font-normal cursor-pointer">
                 Air Payau
               </Label>

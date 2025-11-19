@@ -36,7 +36,7 @@ const Products = () => {
       setFilters(prev => ({
         ...prev,
         search: urlSearch || undefined,
-        waterType: urlWaterType || undefined
+        waterType: urlWaterType ? urlWaterType.toLowerCase() : undefined
       }));
     }
   }, [searchParams]);
