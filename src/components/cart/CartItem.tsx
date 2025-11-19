@@ -16,6 +16,7 @@ interface CartItemProps {
   stockQuantity: number;
   variantName?: string;
   priceAdjustment?: number;
+  variantStockQuantity?: number;
   onUpdateQuantity: (id: string, quantity: number) => void;
   onRemove: (id: string) => void;
 }
@@ -32,6 +33,7 @@ export function CartItem({
   stockQuantity,
   variantName,
   priceAdjustment = 0,
+  variantStockQuantity,
   onUpdateQuantity,
   onRemove,
 }: CartItemProps) {
@@ -41,24 +43,37 @@ export function CartItem({
     : adjustedPrice;
   const subtotal = finalPrice * quantity;
 
+  // Determine actual stock (variant stock takes priority)
+  const actualStock = variantStockQuantity !== undefined ? variantStockQuantity : stockQuantity;
+  const isOutOfStock = actualStock <= 0;
+
   return (
-    <Card>
+    <Card className={isOutOfStock ? 'opacity-60' : ''}>
       <CardContent className="p-4">
         <div className="flex gap-4">
           {/* Product Image */}
-          <Link to={`/products/${productSlug}`} className="flex-shrink-0">
+          <Link to={`/products/${productSlug}`} className="flex-shrink-0 relative">
             <img
               src={productImage}
               alt={productName}
-              className="w-24 h-24 object-cover rounded-lg"
+              className={`w-24 h-24 object-cover rounded-lg ${isOutOfStock ? 'grayscale' : ''}`}
             />
+            {isOutOfStock && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
+                <span className="text-white text-xs font-bold px-2 py-1 bg-destructive rounded">
+                  HABIS
+                </span>
+              </div>
+            )}
           </Link>
 
           {/* Product Info */}
           <div className="flex-1 min-w-0">
             <Link
               to={`/products/${productSlug}`}
-              className="font-semibold hover:text-primary transition-colors line-clamp-2"
+              className={`font-semibold hover:text-primary transition-colors line-clamp-2 ${
+                isOutOfStock ? 'text-muted-foreground' : ''
+              }`}
             >
               {productName}
             </Link>
@@ -67,6 +82,14 @@ export function CartItem({
               <p className="text-sm text-muted-foreground mt-1">
                 Variant: {variantName}
               </p>
+            )}
+
+            {isOutOfStock && (
+              <div className="mt-2 inline-block">
+                <span className="text-xs bg-destructive text-destructive-foreground px-2 py-1 rounded-full font-semibold">
+                  Stok Habis
+                </span>
+              </div>
             )}
 
             <div className="mt-2 space-y-1">
@@ -80,7 +103,7 @@ export function CartItem({
                   </span>
                 </div>
               )}
-              <div className="text-lg font-bold text-primary">
+              <div className={`text-lg font-bold ${isOutOfStock ? 'text-muted-foreground' : 'text-primary'}`}>
                 Rp {finalPrice.toLocaleString('id-ID')}
               </div>
             </div>
@@ -93,7 +116,7 @@ export function CartItem({
                   size="icon"
                   className="h-8 w-8"
                   onClick={() => onUpdateQuantity(id, quantity - 1)}
-                  disabled={quantity <= 1}
+                  disabled={quantity <= 1 || isOutOfStock}
                 >
                   <Minus className="h-4 w-4" />
                 </Button>
@@ -102,20 +125,21 @@ export function CartItem({
                   value={quantity}
                   onChange={(e) => {
                     const val = parseInt(e.target.value);
-                    if (!isNaN(val) && val > 0 && val <= stockQuantity) {
+                    if (!isNaN(val) && val > 0 && val <= actualStock) {
                       onUpdateQuantity(id, val);
                     }
                   }}
                   className="w-16 h-8 text-center"
                   min={1}
-                  max={stockQuantity}
+                  max={actualStock}
+                  disabled={isOutOfStock}
                 />
                 <Button
                   variant="outline"
                   size="icon"
                   className="h-8 w-8"
                   onClick={() => onUpdateQuantity(id, quantity + 1)}
-                  disabled={quantity >= stockQuantity}
+                  disabled={quantity >= actualStock || isOutOfStock}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -131,9 +155,9 @@ export function CartItem({
               </Button>
             </div>
 
-            {stockQuantity < 10 && (
+            {!isOutOfStock && actualStock < 10 && (
               <p className="text-xs text-destructive mt-2">
-                Stok tersisa: {stockQuantity}
+                Stok tersisa: {actualStock}
               </p>
             )}
           </div>

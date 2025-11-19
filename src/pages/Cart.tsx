@@ -213,9 +213,10 @@ const Cart = () => {
                   price={item.product.price}
                   discountPercentage={item.product.discount_percentage}
                   quantity={item.quantity}
-                  stockQuantity={item.product_variants?.stock_quantity || item.product.stock_quantity}
+                  stockQuantity={item.product.stock_quantity}
                   variantName={item.product_variants?.variant_name}
                   priceAdjustment={item.product_variants?.price_adjustment || 0}
+                  variantStockQuantity={item.product_variants?.stock_quantity}
                   onUpdateQuantity={handleUpdateQuantity}
                   onRemove={handleRemoveItem}
                 />
