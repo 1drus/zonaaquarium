@@ -1,4 +1,5 @@
 import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from "lucide-react";
+import zonaLogo from "@/assets/zona-aquarium-logo.png";
 
 export const Footer = () => {
   return (
@@ -7,14 +8,11 @@ export const Footer = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-ocean">
-                <span className="text-xl font-bold text-primary-foreground">ZA</span>
-              </div>
-              <span className="text-xl font-bold bg-gradient-ocean bg-clip-text text-transparent">
-                Zona Aquarium
-              </span>
-            </div>
+            <img 
+              src={zonaLogo} 
+              alt="Zona Aquarium Logo" 
+              className="h-16 w-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.1)]"
+            />
             <p className="text-sm text-muted-foreground">
               Toko ikan hias terpercaya dengan koleksi lengkap dan kualitas terjamin.
               Melayani pengiriman ke seluruh Indonesia.
