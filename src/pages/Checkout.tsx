@@ -31,6 +31,7 @@ interface CartItem {
     variant_name: string;
     sku: string | null;
     price_adjustment: number | null;
+    stock_quantity: number;
   } | null;
   products: {
     id: string;
@@ -38,6 +39,7 @@ interface CartItem {
     slug: string;
     price: number;
     discount_percentage: number | null;
+    stock_quantity: number;
     product_images: { image_url: string; is_primary: boolean }[];
   };
 }
@@ -115,7 +117,8 @@ export default function Checkout() {
           id,
           variant_name,
           sku,
-          price_adjustment
+          price_adjustment,
+          stock_quantity
         ),
         products (
           id,
@@ -123,6 +126,7 @@ export default function Checkout() {
           slug,
           price,
           discount_percentage,
+          stock_quantity,
           product_images (image_url, is_primary)
         )
       `)
@@ -178,6 +182,25 @@ export default function Checkout() {
 
   const handleSubmitOrder = async () => {
     if (!user || !selectedAddress) return;
+
+    // Check for out-of-stock items before proceeding
+    const outOfStockItems = cartItems.filter(item => {
+      const actualStock = item.product_variants 
+        ? item.product_variants.stock_quantity 
+        : item.products.stock_quantity;
+      return actualStock <= 0;
+    });
+
+    if (outOfStockItems.length > 0) {
+      const itemNames = outOfStockItems.map(item => item.products.name).join(', ');
+      toast({
+        variant: 'destructive',
+        title: 'Ada produk yang stok habis',
+        description: `Produk berikut stok habis: ${itemNames}. Silakan hapus dari keranjang untuk melanjutkan.`,
+      });
+      navigate('/cart');
+      return;
+    }
 
     setSubmitting(true);
     
