@@ -52,19 +52,21 @@ export function CartItem({
       <CardContent className="p-4">
         <div className="flex gap-4">
           {/* Product Image */}
-          <Link to={`/products/${productSlug}`} className="flex-shrink-0 relative">
-            <img
-              src={productImage}
-              alt={productName}
-              className={`w-24 h-24 object-cover rounded-lg ${isOutOfStock ? 'grayscale' : ''}`}
-            />
-            {isOutOfStock && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-                <span className="text-white text-xs font-bold px-2 py-1 bg-destructive rounded">
-                  HABIS
-                </span>
-              </div>
-            )}
+          <Link to={`/products/${productSlug}`} className="flex-shrink-0">
+            <div className="relative w-24 h-24">
+              <img
+                src={productImage}
+                alt={productName}
+                className={`w-full h-full object-cover rounded-lg ${isOutOfStock ? 'grayscale' : ''}`}
+              />
+              {isOutOfStock && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-lg">
+                  <span className="text-white text-xs font-bold px-2 py-1 bg-destructive rounded">
+                    HABIS
+                  </span>
+                </div>
+              )}
+            </div>
           </Link>
 
           {/* Product Info */}
