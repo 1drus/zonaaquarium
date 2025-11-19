@@ -77,6 +77,7 @@ export default function Checkout() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [snapLoaded, setSnapLoaded] = useState(false);
   
   // Form data
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
@@ -103,6 +104,21 @@ export default function Checkout() {
       script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
       script.setAttribute('data-client-key', clientKey);
       script.async = true;
+      
+      script.onload = () => {
+        console.log('Midtrans Snap script loaded successfully');
+        setSnapLoaded(true);
+      };
+      
+      script.onerror = () => {
+        console.error('Failed to load Midtrans Snap script');
+        toast({
+          variant: 'destructive',
+          title: 'Gagal memuat sistem pembayaran',
+          description: 'Silakan refresh halaman dan coba lagi.',
+        });
+      };
+      
       document.body.appendChild(script);
 
       return () => {
@@ -412,33 +428,57 @@ export default function Checkout() {
 
       if (clearError) throw clearError;
 
-      // Open Midtrans Snap payment popup
+      // Wait for Snap to be loaded and then open payment popup
       if (midtransData?.token) {
-        if (window.snap) {
-          window.snap.pay(midtransData.token, {
-            onSuccess: function(result: any) {
-              console.log('Payment success:', result);
-              navigate(`/order-success/${orderData.id}`);
-            },
-            onPending: function(result: any) {
-              console.log('Payment pending:', result);
-              navigate(`/order-success/${orderData.id}`);
-            },
-            onError: function(result: any) {
-              console.error('Payment error:', result);
-              toast({
-                variant: 'destructive',
-                title: 'Pembayaran gagal',
-                description: 'Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.',
-              });
-            },
-            onClose: function() {
-              console.log('Payment popup closed');
-              navigate(`/order-success/${orderData.id}`);
-            }
-          });
+        const openSnapPayment = () => {
+          if (window.snap) {
+            console.log('Opening Midtrans Snap with token:', midtransData.token);
+            window.snap.pay(midtransData.token, {
+              onSuccess: function(result: any) {
+                console.log('Payment success:', result);
+                navigate(`/order-success/${orderData.id}`);
+              },
+              onPending: function(result: any) {
+                console.log('Payment pending:', result);
+                navigate(`/order-success/${orderData.id}`);
+              },
+              onError: function(result: any) {
+                console.error('Payment error:', result);
+                toast({
+                  variant: 'destructive',
+                  title: 'Pembayaran gagal',
+                  description: 'Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.',
+                });
+                setSubmitting(false);
+              },
+              onClose: function() {
+                console.log('Payment popup closed');
+                navigate(`/orders`);
+              }
+            });
+          } else {
+            console.error('Snap not available, retrying...');
+            setTimeout(() => {
+              if (window.snap) {
+                openSnapPayment();
+              } else {
+                toast({
+                  variant: 'destructive',
+                  title: 'Gagal memuat pembayaran',
+                  description: 'Sistem pembayaran belum siap. Silakan refresh halaman dan coba lagi.',
+                });
+                setSubmitting(false);
+              }
+            }, 1000);
+          }
+        };
+        
+        // If snap is already loaded, open immediately, otherwise wait a bit
+        if (snapLoaded && window.snap) {
+          openSnapPayment();
         } else {
-          throw new Error('Midtrans Snap belum dimuat. Silakan refresh halaman.');
+          console.log('Waiting for Snap to load...');
+          setTimeout(openSnapPayment, 500);
         }
       } else {
         throw new Error('Gagal membuat transaksi pembayaran');
