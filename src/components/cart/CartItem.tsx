@@ -48,7 +48,7 @@ export function CartItem({
   const isOutOfStock = actualStock <= 0;
 
   return (
-    <Card>
+    <Card className={isOutOfStock ? 'opacity-60' : ''}>
       <CardContent className="p-4">
         <div className="flex gap-4">
           {/* Product Image */}
