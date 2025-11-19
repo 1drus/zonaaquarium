@@ -10,21 +10,21 @@ export const CategoriesSection = () => {
       description: "Koleksi ikan hias air tawar dari berbagai jenis dan ukuran",
       image: freshwaterImg,
       count: 156,
-      slug: "Tawar",
+      slug: "tawar",
     },
     {
       title: "Ikan Air Laut",
       description: "Ikan laut eksotis untuk akuarium air asin Anda",
       image: saltwaterImg,
       count: 89,
-      slug: "Laut",
+      slug: "laut",
     },
     {
       title: "Tanaman Aquascape",
       description: "Tanaman air untuk mempercantik akuarium Anda",
       image: plantsImg,
       count: 67,
-      slug: "Tanaman",
+      slug: "tanaman",
     },
   ];
 
