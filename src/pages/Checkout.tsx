@@ -13,6 +13,15 @@ import { OrderSummary } from '@/components/checkout/OrderSummary';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 
+// Midtrans Snap type declaration
+declare global {
+  interface Window {
+    snap?: {
+      pay: (token: string, options?: any) => void;
+    };
+  }
+}
+
 interface Voucher {
   id: string;
   code: string;
@@ -87,12 +96,13 @@ export default function Checkout() {
     }
     loadCartItems();
     
-    // Load Midtrans Snap script
+    // Load Midtrans Snap script for sandbox
     const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY;
     if (clientKey) {
       const script = document.createElement('script');
-      script.src = 'https://app.midtrans.com/snap/snap.js';
+      script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
       script.setAttribute('data-client-key', clientKey);
+      script.async = true;
       document.body.appendChild(script);
 
       return () => {
@@ -402,9 +412,34 @@ export default function Checkout() {
 
       if (clearError) throw clearError;
 
-      // Redirect to Midtrans payment page
-      if (midtransData?.redirectUrl) {
-        window.location.href = midtransData.redirectUrl;
+      // Open Midtrans Snap payment popup
+      if (midtransData?.token) {
+        if (window.snap) {
+          window.snap.pay(midtransData.token, {
+            onSuccess: function(result: any) {
+              console.log('Payment success:', result);
+              navigate(`/order-success/${orderData.id}`);
+            },
+            onPending: function(result: any) {
+              console.log('Payment pending:', result);
+              navigate(`/order-success/${orderData.id}`);
+            },
+            onError: function(result: any) {
+              console.error('Payment error:', result);
+              toast({
+                variant: 'destructive',
+                title: 'Pembayaran gagal',
+                description: 'Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.',
+              });
+            },
+            onClose: function() {
+              console.log('Payment popup closed');
+              navigate(`/order-success/${orderData.id}`);
+            }
+          });
+        } else {
+          throw new Error('Midtrans Snap belum dimuat. Silakan refresh halaman.');
+        }
       } else {
         throw new Error('Gagal membuat transaksi pembayaran');
       }
