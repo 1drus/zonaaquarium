@@ -6,8 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// RajaOngkir Sandbox API base URL
-const RAJAONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter';
+const BITESHIP_BASE_URL = 'https://api.biteship.com/v1';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -15,98 +14,66 @@ serve(async (req) => {
   }
 
   try {
-    const { action, provinceId, cityId, destination, weight, courier } = await req.json();
+    const { action, cityName, destinationAreaId, weight } = await req.json();
     
-    const costKey = Deno.env.get('RAJAONGKIR_COST_KEY');
-    const deliveryKey = Deno.env.get('RAJAONGKIR_DELIVERY_KEY');
+    const apiKey = Deno.env.get('BITESHIP_API_KEY');
 
-    console.log('RajaOngkir action:', action);
+    console.log('Biteship action:', action);
 
-    // Get provinces list
-    if (action === 'provinces') {
-      const response = await fetch(`${RAJAONGKIR_BASE_URL}/province`, {
-        method: 'GET',
-        headers: {
-          'key': costKey || '',
-        },
-      });
+    // Search for city to get area_id
+    if (action === 'searchCity') {
+      const response = await fetch(
+        `${BITESHIP_BASE_URL}/maps/areas?countries=ID&input=${encodeURIComponent(cityName)}&type=single`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': apiKey || '',
+          },
+        }
+      );
 
       const data = await response.json();
-      console.log('Provinces response:', data);
+      console.log('Search city response:', data);
 
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Get cities by province
-    if (action === 'cities') {
-      const url = provinceId 
-        ? `${RAJAONGKIR_BASE_URL}/city?province=${provinceId}`
-        : `${RAJAONGKIR_BASE_URL}/city`;
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'key': costKey || '',
-        },
-      });
-
-      const data = await response.json();
-      console.log('Cities response:', data);
-
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Get city by ID
-    if (action === 'city') {
-      const response = await fetch(`${RAJAONGKIR_BASE_URL}/city?id=${cityId}`, {
-        method: 'GET',
-        headers: {
-          'key': costKey || '',
-        },
-      });
-
-      const data = await response.json();
-      console.log('City response:', data);
-
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Calculate shipping cost
-    if (action === 'cost') {
-      // Origin city ID - Zona Aquarium location (example: Jakarta = 152)
+    // Get shipping rates
+    if (action === 'rates') {
+      // Origin: Jakarta Pusat (get this from Biteship area search)
       // You can change this based on your store location
-      const origin = '152'; // Jakarta Pusat
+      const originAreaId = 'IDNP6IDNC148IDND1845IDZ10013'; // Jakarta Pusat example
 
-      const formData = new URLSearchParams();
-      formData.append('origin', origin);
-      formData.append('destination', destination);
-      formData.append('weight', weight.toString());
-      formData.append('courier', courier);
+      const requestBody = {
+        origin_area_id: originAreaId,
+        destination_area_id: destinationAreaId,
+        couriers: 'jne,jnt,sicepat,anteraja,ninja,lion',
+        items: [
+          {
+            name: 'Paket',
+            description: 'Paket produk',
+            value: 10000,
+            weight: weight || 1000,
+            quantity: 1,
+          },
+        ],
+      };
 
-      console.log('Calculating cost with params:', {
-        origin,
-        destination,
-        weight,
-        courier
-      });
+      console.log('Getting rates with params:', requestBody);
 
-      const response = await fetch(`${RAJAONGKIR_BASE_URL}/cost`, {
+      const response = await fetch(`${BITESHIP_BASE_URL}/rates/couriers`, {
         method: 'POST',
         headers: {
-          'key': deliveryKey || '',
-          'content-type': 'application/x-www-form-urlencoded',
+          'Authorization': apiKey || '',
+          'Content-Type': 'application/json',
         },
-        body: formData.toString(),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
-      console.log('Cost calculation response:', data);
+      console.log('Rates response:', data);
 
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -122,7 +89,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in rajaongkir-shipping:', error);
+    console.error('Error in biteship-shipping:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(
       JSON.stringify({ error: errorMessage }), 
