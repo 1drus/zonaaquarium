@@ -87,6 +87,41 @@ export function ShippingStep({
 
         if (error) throw error;
 
+        // Check if Biteship balance is insufficient, use mock data
+        if (!data?.success && data?.error?.includes('No sufficient balance')) {
+          console.warn('Biteship balance insufficient, using mock data');
+          const mockOptions: ShippingOption[] = [
+            {
+              id: 'jne-reg',
+              name: 'JNE REG',
+              courier: 'JNE',
+              estimatedDays: '2-3 hari',
+              cost: 15000,
+            },
+            {
+              id: 'jnt-reg',
+              name: 'J&T REG',
+              courier: 'J&T',
+              estimatedDays: '2-4 hari',
+              cost: 12000,
+            },
+            {
+              id: 'sicepat-reg',
+              name: 'SiCepat REG',
+              courier: 'SiCepat',
+              estimatedDays: '2-3 hari',
+              cost: 13000,
+            },
+          ];
+          setShippingOptions(mockOptions);
+          toast({
+            title: 'Mode Development',
+            description: 'Menggunakan data ongkir mock. Top up saldo Biteship untuk data real.',
+            variant: 'default',
+          });
+          return;
+        }
+
         if (data?.success && data?.pricing) {
           const allOptions: ShippingOption[] = data.pricing.map((rate: any) => ({
             id: `${rate.courier_code}-${rate.courier_service_code}`,
