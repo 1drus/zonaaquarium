@@ -36,94 +36,75 @@ export function ShippingStep({
   const { toast } = useToast();
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
   const [loading, setLoading] = useState(false);
-  const [cityId, setCityId] = useState<string>('');
+  const [areaId, setAreaId] = useState<string>('');
 
-  // Get city ID from RajaOngkir based on city name
+  // Get area ID from Biteship based on city name
   useEffect(() => {
-    const getCityId = async () => {
+    const getAreaId = async () => {
       if (!selectedAddress) return;
 
       try {
         const { data, error } = await supabase.functions.invoke('rajaongkir-shipping', {
           body: {
-            action: 'cities',
+            action: 'searchCity',
+            cityName: selectedAddress.city,
           },
         });
 
         if (error) throw error;
 
-        if (data?.rajaongkir?.results) {
-          // Find city that matches the address city name
-          const city = data.rajaongkir.results.find(
-            (c: any) => c.city_name.toLowerCase().includes(selectedAddress.city.toLowerCase())
-          );
-          
-          if (city) {
-            setCityId(city.city_id);
-          } else {
-            console.log('City not found, using default');
-          }
+        if (data?.areas && data.areas.length > 0) {
+          // Use the first matching area
+          setAreaId(data.areas[0].id);
+        } else {
+          console.log('Area not found for city:', selectedAddress.city);
         }
       } catch (error) {
-        console.error('Error getting city ID:', error);
+        console.error('Error getting area ID:', error);
       }
     };
 
-    getCityId();
+    getAreaId();
   }, [selectedAddress]);
 
-  // Fetch shipping costs from RajaOngkir
+  // Fetch shipping costs from Biteship
   useEffect(() => {
     const fetchShippingCosts = async () => {
-      if (!cityId || !selectedAddress) return;
+      if (!areaId || !selectedAddress) return;
 
       setLoading(true);
       try {
-        // Get costs for multiple couriers
-        const couriers = ['jne', 'jnt', 'sicepat'];
-        const allOptions: ShippingOption[] = [];
-
         // Estimate weight based on cart (example: 1kg = 1000g)
         const estimatedWeight = 1000; // You can make this dynamic based on cart items
 
-        for (const courier of couriers) {
-          const { data, error } = await supabase.functions.invoke('rajaongkir-shipping', {
-            body: {
-              action: 'cost',
-              destination: cityId,
-              weight: estimatedWeight,
-              courier: courier,
-            },
-          });
+        const { data, error } = await supabase.functions.invoke('rajaongkir-shipping', {
+          body: {
+            action: 'rates',
+            destinationAreaId: areaId,
+            weight: estimatedWeight,
+          },
+        });
 
-          if (error) {
-            console.error(`Error fetching ${courier} costs:`, error);
-            continue;
-          }
+        if (error) throw error;
 
-          if (data?.rajaongkir?.results?.[0]?.costs) {
-            const courierCosts = data.rajaongkir.results[0].costs;
-            
-            courierCosts.forEach((service: any) => {
-              allOptions.push({
-                id: `${courier}-${service.service.toLowerCase()}`,
-                name: `${courier.toUpperCase()} ${service.service}`,
-                courier: courier.toUpperCase(),
-                estimatedDays: service.cost[0].etd + ' hari',
-                cost: service.cost[0].value,
-              });
+        if (data?.success && data?.pricing) {
+          const allOptions: ShippingOption[] = data.pricing.map((rate: any) => ({
+            id: `${rate.courier_code}-${rate.courier_service_code}`,
+            name: `${rate.courier_name} ${rate.courier_service_name}`,
+            courier: rate.courier_name,
+            estimatedDays: rate.duration || 'Estimasi tidak tersedia',
+            cost: rate.price,
+          }));
+
+          if (allOptions.length > 0) {
+            setShippingOptions(allOptions);
+          } else {
+            toast({
+              title: 'Tidak ada opsi pengiriman',
+              description: 'Tidak ditemukan layanan pengiriman untuk lokasi Anda',
+              variant: 'destructive',
             });
           }
-        }
-
-        if (allOptions.length > 0) {
-          setShippingOptions(allOptions);
-        } else {
-          toast({
-            title: 'Tidak ada opsi pengiriman',
-            description: 'Tidak ditemukan layanan pengiriman untuk lokasi Anda',
-            variant: 'destructive',
-          });
         }
       } catch (error) {
         console.error('Error fetching shipping costs:', error);
@@ -138,7 +119,7 @@ export function ShippingStep({
     };
 
     fetchShippingCosts();
-  }, [cityId, selectedAddress, toast]);
+  }, [areaId, selectedAddress, toast]);
 
   if (!selectedAddress) {
     return (
