@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Loader2, Settings } from 'lucide-react';
+import { ShippingOriginSettings } from './ShippingOriginSettings';
 
 export function SystemSettings() {
   const [loading, setLoading] = useState(true);
@@ -81,73 +82,77 @@ export function SystemSettings() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Settings className="h-5 w-5" />
-          <CardTitle>Pengaturan Sistem</CardTitle>
-        </div>
-        <CardDescription>
-          Kelola konfigurasi sistem dan integrasi payment gateway
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex items-center justify-between space-x-4 rounded-lg border p-4">
-          <div className="flex-1 space-y-1">
-            <Label htmlFor="midtrans-mode" className="text-base font-semibold">
-              Midtrans Environment
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              {isProduction ? (
-                <>
-                  <span className="font-medium text-green-600">Mode Production</span> - Transaksi menggunakan server production Midtrans
-                </>
-              ) : (
-                <>
-                  <span className="font-medium text-orange-600">Mode Sandbox</span> - Testing dengan server sandbox Midtrans
-                </>
-              )}
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              ⚠️ Pastikan MIDTRANS_SERVER_KEY sesuai dengan environment yang dipilih
-            </p>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            <CardTitle>Pengaturan Sistem</CardTitle>
           </div>
-          <Switch
-            id="midtrans-mode"
-            checked={isProduction}
-            onCheckedChange={handleToggle}
-            disabled={saving}
-          />
-        </div>
+          <CardDescription>
+            Kelola konfigurasi sistem dan integrasi payment gateway
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between space-x-4 rounded-lg border p-4">
+            <div className="flex-1 space-y-1">
+              <Label htmlFor="midtrans-mode" className="text-base font-semibold">
+                Midtrans Environment
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {isProduction ? (
+                  <>
+                    <span className="font-medium text-green-600">Mode Production</span> - Transaksi menggunakan server production Midtrans
+                  </>
+                ) : (
+                  <>
+                    <span className="font-medium text-orange-600">Mode Sandbox</span> - Testing dengan server sandbox Midtrans
+                  </>
+                )}
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                ⚠️ Pastikan MIDTRANS_SERVER_KEY sesuai dengan environment yang dipilih
+              </p>
+            </div>
+            <Switch
+              id="midtrans-mode"
+              checked={isProduction}
+              onCheckedChange={handleToggle}
+              disabled={saving}
+            />
+          </div>
 
-        <div className="rounded-lg bg-muted p-4 space-y-2">
-          <p className="text-sm font-medium">Informasi Environment:</p>
-          <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
-            <li>
-              <strong>Sandbox:</strong> Untuk testing, gunakan Sandbox Server Key dari{' '}
-              <a 
-                href="https://dashboard.sandbox.midtrans.com/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                Dashboard Sandbox
-              </a>
-            </li>
-            <li>
-              <strong>Production:</strong> Untuk transaksi real, gunakan Production Server Key dari{' '}
-              <a 
-                href="https://dashboard.midtrans.com/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                Dashboard Production
-              </a>
-            </li>
-          </ul>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="rounded-lg bg-muted p-4 space-y-2">
+            <p className="text-sm font-medium">Informasi Environment:</p>
+            <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
+              <li>
+                <strong>Sandbox:</strong> Untuk testing, gunakan Sandbox Server Key dari{' '}
+                <a 
+                  href="https://dashboard.sandbox.midtrans.com/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Dashboard Sandbox
+                </a>
+              </li>
+              <li>
+                <strong>Production:</strong> Untuk transaksi real, gunakan Production Server Key dari{' '}
+                <a 
+                  href="https://dashboard.midtrans.com/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Dashboard Production
+                </a>
+              </li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+
+      <ShippingOriginSettings />
+    </div>
   );
 }
