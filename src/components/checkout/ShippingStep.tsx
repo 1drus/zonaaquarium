@@ -36,11 +36,11 @@ export function ShippingStep({
   const { toast } = useToast();
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
   const [loading, setLoading] = useState(false);
-  const [areaId, setAreaId] = useState<string>('');
+  const [cityId, setCityId] = useState<string>('');
 
-  // Get area ID from Biteship based on city name
+  // Get city ID from RajaOngkir based on city name
   useEffect(() => {
-    const getAreaId = async () => {
+    const getCityId = async () => {
       if (!selectedAddress) return;
 
       try {
@@ -53,24 +53,24 @@ export function ShippingStep({
 
         if (error) throw error;
 
-        if (data?.areas && data.areas.length > 0) {
-          // Use the first matching area
-          setAreaId(data.areas[0].id);
+        if (data?.data && data.data.length > 0) {
+          // Use the first matching city
+          setCityId(data.data[0].id.toString());
         } else {
-          console.log('Area not found for city:', selectedAddress.city);
+          console.log('City not found:', selectedAddress.city);
         }
       } catch (error) {
-        console.error('Error getting area ID:', error);
+        console.error('Error getting city ID:', error);
       }
     };
 
-    getAreaId();
+    getCityId();
   }, [selectedAddress]);
 
-  // Fetch shipping costs from Biteship
+  // Fetch shipping costs from RajaOngkir
   useEffect(() => {
     const fetchShippingCosts = async () => {
-      if (!areaId || !selectedAddress) return;
+      if (!cityId || !selectedAddress) return;
 
       setLoading(true);
       try {
@@ -80,56 +80,32 @@ export function ShippingStep({
         const { data, error } = await supabase.functions.invoke('rajaongkir-shipping', {
           body: {
             action: 'rates',
-            destinationAreaId: areaId,
+            destinationCityId: cityId,
             weight: estimatedWeight,
           },
         });
 
         if (error) throw error;
 
-        // Check if Biteship balance is insufficient, use mock data
-        if (!data?.success && data?.error?.includes('No sufficient balance')) {
-          console.warn('Biteship balance insufficient, using mock data');
-          const mockOptions: ShippingOption[] = [
-            {
-              id: 'jne-reg',
-              name: 'JNE REG',
-              courier: 'JNE',
-              estimatedDays: '2-3 hari',
-              cost: 15000,
-            },
-            {
-              id: 'jnt-reg',
-              name: 'J&T REG',
-              courier: 'J&T',
-              estimatedDays: '2-4 hari',
-              cost: 12000,
-            },
-            {
-              id: 'sicepat-reg',
-              name: 'SiCepat REG',
-              courier: 'SiCepat',
-              estimatedDays: '2-3 hari',
-              cost: 13000,
-            },
-          ];
-          setShippingOptions(mockOptions);
-          toast({
-            title: 'Mode Development',
-            description: 'Menggunakan data ongkir mock. Top up saldo Biteship untuk data real.',
-            variant: 'default',
+        if (data?.meta?.status === 'success' && data?.data) {
+          const allOptions: ShippingOption[] = [];
+          
+          // Process RajaOngkir response
+          data.data.forEach((courier: any) => {
+            if (courier.service) {
+              const serviceData = Array.isArray(courier.service) ? courier.service : [courier.service];
+              
+              serviceData.forEach((service: any) => {
+                allOptions.push({
+                  id: `${courier.code}-${service}`,
+                  name: `${courier.name} - ${service}`,
+                  courier: courier.name,
+                  estimatedDays: courier.etd || 'Estimasi tidak tersedia',
+                  cost: courier.cost || 0,
+                });
+              });
+            }
           });
-          return;
-        }
-
-        if (data?.success && data?.pricing) {
-          const allOptions: ShippingOption[] = data.pricing.map((rate: any) => ({
-            id: `${rate.courier_code}-${rate.courier_service_code}`,
-            name: `${rate.courier_name} ${rate.courier_service_name}`,
-            courier: rate.courier_name,
-            estimatedDays: rate.duration || 'Estimasi tidak tersedia',
-            cost: rate.price,
-          }));
 
           if (allOptions.length > 0) {
             setShippingOptions(allOptions);
@@ -140,6 +116,12 @@ export function ShippingStep({
               variant: 'destructive',
             });
           }
+        } else {
+          toast({
+            title: 'Gagal mengambil data',
+            description: 'Tidak dapat menghubungi layanan ongkir',
+            variant: 'destructive',
+          });
         }
       } catch (error) {
         console.error('Error fetching shipping costs:', error);
@@ -154,7 +136,7 @@ export function ShippingStep({
     };
 
     fetchShippingCosts();
-  }, [areaId, selectedAddress, toast]);
+  }, [cityId, selectedAddress, toast]);
 
   if (!selectedAddress) {
     return (
