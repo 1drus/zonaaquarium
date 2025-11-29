@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,26 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+
+interface Province {
+  id: number;
+  name: string;
+}
+
+interface City {
+  id: number;
+  name: string;
+}
+
+interface District {
+  id: number;
+  name: string;
+}
+
+interface Subdistrict {
+  id: number;
+  name: string;
+}
 
 interface AddressDialogProps {
   open: boolean;
@@ -42,9 +63,187 @@ export function AddressDialog({ open, onClose, address }: AddressDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<AddressFormData>({
+  // RajaOngkir data states
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [subdistricts, setSubdistricts] = useState<Subdistrict[]>([]);
+  
+  // Selected values
+  const [selectedProvinceId, setSelectedProvinceId] = useState<string>('');
+  const [selectedCityId, setSelectedCityId] = useState<string>('');
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string>('');
+  const [selectedSubdistrictId, setSelectedSubdistrictId] = useState<string>('');
+  
+  // Loading states
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingSubdistricts, setLoadingSubdistricts] = useState(false);
+  
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<AddressFormData>({
     resolver: zodResolver(addressSchema)
   });
+
+  // Load provinces on mount
+  useEffect(() => {
+    loadProvinces();
+  }, []);
+
+  const loadProvinces = async () => {
+    setLoadingProvinces(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('rajaongkir-shipping', {
+        body: { action: 'getProvinces' },
+      });
+
+      if (error) throw error;
+
+      if (data?.meta?.status === 'success' && data?.data) {
+        setProvinces(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading provinces:', error);
+      toast({
+        title: 'Error',
+        description: 'Gagal memuat daftar provinsi',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingProvinces(false);
+    }
+  };
+
+  const loadCities = async (provinceId: string) => {
+    setLoadingCities(true);
+    setCities([]);
+    setDistricts([]);
+    setSubdistricts([]);
+    setSelectedCityId('');
+    setSelectedDistrictId('');
+    setSelectedSubdistrictId('');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('rajaongkir-shipping', {
+        body: { 
+          action: 'getCities',
+          provinceId: parseInt(provinceId)
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.meta?.status === 'success' && data?.data) {
+        setCities(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading cities:', error);
+      toast({
+        title: 'Error',
+        description: 'Gagal memuat daftar kota',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+
+  const loadDistricts = async (cityId: string) => {
+    setLoadingDistricts(true);
+    setDistricts([]);
+    setSubdistricts([]);
+    setSelectedDistrictId('');
+    setSelectedSubdistrictId('');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('rajaongkir-shipping', {
+        body: { 
+          action: 'getDistricts',
+          cityId: parseInt(cityId)
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.meta?.status === 'success' && data?.data) {
+        setDistricts(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading districts:', error);
+      toast({
+        title: 'Error',
+        description: 'Gagal memuat daftar kecamatan',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingDistricts(false);
+    }
+  };
+
+  const loadSubdistricts = async (districtId: string) => {
+    setLoadingSubdistricts(true);
+    setSubdistricts([]);
+    setSelectedSubdistrictId('');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('rajaongkir-shipping', {
+        body: { 
+          action: 'getSubdistricts',
+          districtId: parseInt(districtId)
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.meta?.status === 'success' && data?.data) {
+        setSubdistricts(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading subdistricts:', error);
+      toast({
+        title: 'Error',
+        description: 'Gagal memuat daftar kelurahan',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingSubdistricts(false);
+    }
+  };
+
+  const handleProvinceChange = (provinceId: string) => {
+    setSelectedProvinceId(provinceId);
+    const province = provinces.find(p => p.id.toString() === provinceId);
+    if (province) {
+      setValue('province', province.name);
+      loadCities(provinceId);
+    }
+  };
+
+  const handleCityChange = (cityId: string) => {
+    setSelectedCityId(cityId);
+    const city = cities.find(c => c.id.toString() === cityId);
+    if (city) {
+      setValue('city', city.name);
+      loadDistricts(cityId);
+    }
+  };
+
+  const handleDistrictChange = (districtId: string) => {
+    setSelectedDistrictId(districtId);
+    const district = districts.find(d => d.id.toString() === districtId);
+    if (district) {
+      setValue('kecamatan', district.name);
+      loadSubdistricts(districtId);
+    }
+  };
+
+  const handleSubdistrictChange = (subdistrictId: string) => {
+    setSelectedSubdistrictId(subdistrictId);
+    const subdistrict = subdistricts.find(s => s.id.toString() === subdistrictId);
+    if (subdistrict) {
+      setValue('kelurahan', subdistrict.name);
+    }
+  };
 
   useEffect(() => {
     if (address) {
@@ -192,50 +391,94 @@ export function AddressDialog({ open, onClose, address }: AddressDialogProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="kelurahan">Kelurahan</Label>
-              <Input
-                id="kelurahan"
-                {...register('kelurahan')}
-                disabled={loading}
-              />
-              {errors.kelurahan && (
-                <p className="text-sm text-destructive">{errors.kelurahan.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="kecamatan">Kecamatan</Label>
-              <Input
-                id="kecamatan"
-                {...register('kecamatan')}
-                disabled={loading}
-              />
-              {errors.kecamatan && (
-                <p className="text-sm text-destructive">{errors.kecamatan.message}</p>
+              <Label htmlFor="province">Provinsi</Label>
+              <Select 
+                value={selectedProvinceId} 
+                onValueChange={handleProvinceChange}
+                disabled={loading || loadingProvinces}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingProvinces ? "Memuat..." : "Pilih provinsi"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {provinces.map((province) => (
+                    <SelectItem key={province.id} value={province.id.toString()}>
+                      {province.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.province && (
+                <p className="text-sm text-destructive">{errors.province.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="city">Kota</Label>
-              <Input
-                id="city"
-                {...register('city')}
-                disabled={loading}
-              />
+              <Select 
+                value={selectedCityId} 
+                onValueChange={handleCityChange}
+                disabled={loading || loadingCities || !selectedProvinceId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingCities ? "Memuat..." : "Pilih kota"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {cities.map((city) => (
+                    <SelectItem key={city.id} value={city.id.toString()}>
+                      {city.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {errors.city && (
                 <p className="text-sm text-destructive">{errors.city.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="province">Provinsi</Label>
-              <Input
-                id="province"
-                {...register('province')}
-                disabled={loading}
-              />
-              {errors.province && (
-                <p className="text-sm text-destructive">{errors.province.message}</p>
+              <Label htmlFor="kecamatan">Kecamatan</Label>
+              <Select 
+                value={selectedDistrictId} 
+                onValueChange={handleDistrictChange}
+                disabled={loading || loadingDistricts || !selectedCityId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingDistricts ? "Memuat..." : "Pilih kecamatan"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {districts.map((district) => (
+                    <SelectItem key={district.id} value={district.id.toString()}>
+                      {district.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.kecamatan && (
+                <p className="text-sm text-destructive">{errors.kecamatan.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="kelurahan">Kelurahan</Label>
+              <Select 
+                value={selectedSubdistrictId} 
+                onValueChange={handleSubdistrictChange}
+                disabled={loading || loadingSubdistricts || !selectedDistrictId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingSubdistricts ? "Memuat..." : "Pilih kelurahan"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {subdistricts.map((subdistrict) => (
+                    <SelectItem key={subdistrict.id} value={subdistrict.id.toString()}>
+                      {subdistrict.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.kelurahan && (
+                <p className="text-sm text-destructive">{errors.kelurahan.message}</p>
               )}
             </div>
 
