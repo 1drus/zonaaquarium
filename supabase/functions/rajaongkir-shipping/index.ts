@@ -20,7 +20,9 @@ serve(async (req) => {
   }
 
   try {
-    const { action, provinceId, cityId, destinationCityId, weight } = await req.json();
+    // Read body once and extract all possible parameters
+    const body = await req.json();
+    const { action, provinceId, cityId, cityName, destinationCityId, weight } = body;
     
     const apiKey = Deno.env.get('RAJAONGKIR_COST_KEY');
 
@@ -68,7 +70,6 @@ serve(async (req) => {
 
     // Search city by name (for finding destination city)
     if (action === 'searchCity') {
-      const { cityName } = await req.json();
       
       // Get all provinces first
       const provincesRes = await fetch(
