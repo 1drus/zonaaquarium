@@ -68,6 +68,48 @@ serve(async (req) => {
       });
     }
 
+    // Get districts by city
+    if (action === 'getDistricts') {
+      const response = await fetch(
+        `${RAJAONGKIR_BASE_URL}/destination/district/${cityId}`,
+        {
+          method: 'GET',
+          headers: {
+            'key': apiKey || '',
+          },
+        }
+      );
+
+      const data = await response.json();
+      console.log('Districts response:', data);
+
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get subdistricts by district
+    if (action === 'getSubdistricts') {
+      const { districtId } = body;
+      
+      const response = await fetch(
+        `${RAJAONGKIR_BASE_URL}/destination/sub-district/${districtId}`,
+        {
+          method: 'GET',
+          headers: {
+            'key': apiKey || '',
+          },
+        }
+      );
+
+      const data = await response.json();
+      console.log('Subdistricts response:', data);
+
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Search city by name (for finding destination city)
     if (action === 'searchCity') {
       
