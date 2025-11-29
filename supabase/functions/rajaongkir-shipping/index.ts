@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const BITESHIP_BASE_URL = 'https://api.biteship.com/v1';
+const RAJAONGKIR_BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
 
 // Initialize Supabase client with service role for system config access
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -20,77 +20,149 @@ serve(async (req) => {
   }
 
   try {
-    const { action, cityName, destinationAreaId, weight } = await req.json();
+    const { action, provinceId, cityId, destinationCityId, weight } = await req.json();
     
-    const apiKey = Deno.env.get('BITESHIP_API_KEY');
+    const apiKey = Deno.env.get('RAJAONGKIR_COST_KEY');
 
-    console.log('Biteship action:', action);
+    console.log('RajaOngkir action:', action);
 
-    // Search for city to get area_id
-    if (action === 'searchCity') {
+    // Get provinces list
+    if (action === 'getProvinces') {
       const response = await fetch(
-        `${BITESHIP_BASE_URL}/maps/areas?countries=ID&input=${encodeURIComponent(cityName)}&type=single`,
+        `${RAJAONGKIR_BASE_URL}/destination/province`,
         {
           method: 'GET',
           headers: {
-            'Authorization': apiKey || '',
+            'key': apiKey || '',
           },
         }
       );
 
       const data = await response.json();
-      console.log('Search city response:', data);
+      console.log('Provinces response:', data);
 
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    // Get cities by province
+    if (action === 'getCities') {
+      const response = await fetch(
+        `${RAJAONGKIR_BASE_URL}/destination/city/${provinceId}`,
+        {
+          method: 'GET',
+          headers: {
+            'key': apiKey || '',
+          },
+        }
+      );
+
+      const data = await response.json();
+      console.log('Cities response:', data);
+
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Search city by name (for finding destination city)
+    if (action === 'searchCity') {
+      const { cityName } = await req.json();
+      
+      // Get all provinces first
+      const provincesRes = await fetch(
+        `${RAJAONGKIR_BASE_URL}/destination/province`,
+        {
+          method: 'GET',
+          headers: { 'key': apiKey || '' },
+        }
+      );
+      const provincesData = await provincesRes.json();
+
+      // Search through all provinces to find cities matching the name
+      const matchingCities = [];
+      
+      if (provincesData?.meta?.status === 'success' && provincesData?.data) {
+        for (const province of provincesData.data) {
+          const citiesRes = await fetch(
+            `${RAJAONGKIR_BASE_URL}/destination/city/${province.id}`,
+            {
+              method: 'GET',
+              headers: { 'key': apiKey || '' },
+            }
+          );
+          const citiesData = await citiesRes.json();
+          
+          if (citiesData?.meta?.status === 'success' && citiesData?.data) {
+            const matches = citiesData.data.filter((city: any) => 
+              city.name.toLowerCase().includes(cityName.toLowerCase())
+            );
+            matchingCities.push(...matches);
+          }
+        }
+      }
+
+      return new Response(JSON.stringify({
+        meta: { status: 'success', code: 200, message: 'Success' },
+        data: matchingCities
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Get shipping rates
     if (action === 'rates') {
-      // Get origin from system config
+      // Get origin city from system config
       const { data: configData, error: configError } = await supabase
         .from('system_config')
         .select('config_value')
-        .eq('config_key', 'shipping_origin_area_id')
+        .eq('config_key', 'shipping_origin_city_id')
         .single();
 
       if (configError) {
         console.error('Error fetching origin config:', configError);
       }
 
-      const originAreaId = configData?.config_value || 'IDNP6IDNC148IDND1845IDZ10013'; // Fallback to Jakarta Pusat
+      const originCityId = configData?.config_value || '151'; // Fallback to Jakarta Pusat
 
-      const requestBody = {
-        origin_area_id: originAreaId,
-        destination_area_id: destinationAreaId,
-        couriers: 'jne,jnt,sicepat,anteraja,ninja,lion',
-        items: [
-          {
-            name: 'Paket',
-            description: 'Paket produk',
-            value: 10000,
-            weight: weight || 1000,
-            quantity: 1,
-          },
-        ],
-      };
+      // Calculate cost for multiple couriers
+      const couriers = ['jne', 'tiki', 'pos', 'jnt', 'sicepat'];
+      const allResults = [];
 
-      console.log('Getting rates with params:', requestBody);
+      for (const courier of couriers) {
+        const formData = new URLSearchParams();
+        formData.append('origin', originCityId);
+        formData.append('destination', destinationCityId);
+        formData.append('weight', (weight || 1000).toString());
+        formData.append('courier', courier);
 
-      const response = await fetch(`${BITESHIP_BASE_URL}/rates/couriers`, {
-        method: 'POST',
-        headers: {
-          'Authorization': apiKey || '',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
+        try {
+          const response = await fetch(`${RAJAONGKIR_BASE_URL}/calculate/domestic-cost`, {
+            method: 'POST',
+            headers: {
+              'key': apiKey || '',
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData,
+          });
 
-      const data = await response.json();
-      console.log('Rates response:', data);
+          const data = await response.json();
+          
+          if (data?.meta?.status === 'success' && data?.data) {
+            allResults.push(...data.data);
+          }
+        } catch (error) {
+          console.error(`Error fetching ${courier} rates:`, error);
+        }
+      }
 
-      return new Response(JSON.stringify(data), {
+      console.log('All rates:', allResults);
+
+      return new Response(JSON.stringify({
+        meta: { status: 'success', code: 200, message: 'Success' },
+        data: allResults
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

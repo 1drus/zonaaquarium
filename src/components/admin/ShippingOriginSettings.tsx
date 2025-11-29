@@ -3,50 +3,78 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, MapPin, Search } from 'lucide-react';
+import { Loader2, MapPin } from 'lucide-react';
 
-interface AreaOption {
-  id: string;
+interface Province {
+  id: number;
   name: string;
-  administrative_division_level_1_name: string;
-  administrative_division_level_2_name: string;
+}
+
+interface City {
+  id: number;
+  name: string;
+  province_id: number;
 }
 
 export function ShippingOriginSettings() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [searching, setSearching] = useState(false);
-  const [originAreaId, setOriginAreaId] = useState('');
-  const [originName, setOriginName] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<AreaOption[]>([]);
+  const [saving, setSaving] = useState(false);
+  
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  
+  const [selectedProvinceId, setSelectedProvinceId] = useState<string>('');
+  const [selectedCityId, setSelectedCityId] = useState<string>('');
+  const [originCityName, setOriginCityName] = useState<string>('');
 
+  // Load current origin settings
   useEffect(() => {
     loadCurrentOrigin();
+    loadProvinces();
   }, []);
 
   const loadCurrentOrigin = async () => {
-    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('system_config')
         .select('config_key, config_value')
-        .in('config_key', ['shipping_origin_area_id', 'shipping_origin_name']);
+        .in('config_key', ['shipping_origin_city_id', 'shipping_origin_name']);
 
       if (error) throw error;
 
-      const areaId = data?.find(c => c.config_key === 'shipping_origin_area_id')?.config_value || '';
-      const name = data?.find(c => c.config_key === 'shipping_origin_name')?.config_value || '';
-
-      setOriginAreaId(areaId);
-      setOriginName(name);
+      if (data) {
+        const cityIdConfig = data.find(c => c.config_key === 'shipping_origin_city_id');
+        const nameConfig = data.find(c => c.config_key === 'shipping_origin_name');
+        
+        if (cityIdConfig) setSelectedCityId(cityIdConfig.config_value);
+        if (nameConfig) setOriginCityName(nameConfig.config_value);
+      }
     } catch (error) {
       console.error('Error loading origin:', error);
+    }
+  };
+
+  const loadProvinces = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('rajaongkir-shipping', {
+        body: { action: 'getProvinces' },
+      });
+
+      if (error) throw error;
+
+      if (data?.meta?.status === 'success' && data?.data) {
+        setProvinces(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading provinces:', error);
       toast({
         title: 'Error',
-        description: 'Gagal memuat pengaturan origin',
+        description: 'Gagal memuat daftar provinsi',
         variant: 'destructive',
       });
     } finally {
@@ -54,101 +82,95 @@ export function ShippingOriginSettings() {
     }
   };
 
-  const searchCity = async () => {
-    if (!searchQuery.trim()) {
-      toast({
-        title: 'Peringatan',
-        description: 'Masukkan nama kota untuk pencarian',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setSearching(true);
+  const loadCities = async (provinceId: string) => {
+    setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('rajaongkir-shipping', {
-        body: {
-          action: 'searchCity',
-          cityName: searchQuery,
+        body: { 
+          action: 'getCities',
+          provinceId: parseInt(provinceId)
         },
       });
 
       if (error) throw error;
 
-      if (data?.areas && data.areas.length > 0) {
-        setSearchResults(data.areas);
-      } else {
-        toast({
-          title: 'Tidak Ditemukan',
-          description: 'Tidak ada hasil untuk pencarian tersebut',
-        });
-        setSearchResults([]);
+      if (data?.meta?.status === 'success' && data?.data) {
+        setCities(data.data);
       }
     } catch (error) {
-      console.error('Error searching city:', error);
+      console.error('Error loading cities:', error);
       toast({
         title: 'Error',
-        description: 'Gagal mencari kota',
+        description: 'Gagal memuat daftar kota',
         variant: 'destructive',
       });
     } finally {
-      setSearching(false);
+      setLoading(false);
     }
   };
 
-  const selectArea = (area: AreaOption) => {
-    setOriginAreaId(area.id);
-    setOriginName(`${area.name}, ${area.administrative_division_level_2_name}`);
-    setSearchResults([]);
+  const handleProvinceChange = (provinceId: string) => {
+    setSelectedProvinceId(provinceId);
+    setSelectedCityId('');
+    setCities([]);
+    loadCities(provinceId);
+  };
+
+  const handleCityChange = (cityId: string) => {
+    setSelectedCityId(cityId);
+    const city = cities.find(c => c.id.toString() === cityId);
+    if (city) {
+      setOriginCityName(city.name);
+    }
   };
 
   const saveOrigin = async () => {
-    if (!originAreaId || !originName) {
+    if (!selectedCityId || !originCityName) {
       toast({
-        title: 'Validasi Error',
-        description: 'Area ID dan nama origin harus diisi',
+        title: 'Error',
+        description: 'Silakan pilih kota terlebih dahulu',
         variant: 'destructive',
       });
       return;
     }
 
-    setLoading(true);
+    setSaving(true);
     try {
-      // Update or insert area ID
-      const { error: areaError } = await supabase
+      // Save city ID
+      const { error: cityError } = await supabase
         .from('system_config')
         .upsert({
-          config_key: 'shipping_origin_area_id',
-          config_value: originAreaId,
-          description: 'Biteship Area ID untuk lokasi toko (Origin pengiriman)',
+          config_key: 'shipping_origin_city_id',
+          config_value: selectedCityId,
+          description: 'RajaOngkir City ID untuk lokasi toko (Origin pengiriman)'
         });
 
-      if (areaError) throw areaError;
+      if (cityError) throw cityError;
 
-      // Update or insert name
+      // Save city name
       const { error: nameError } = await supabase
         .from('system_config')
         .upsert({
           config_key: 'shipping_origin_name',
-          config_value: originName,
-          description: 'Nama lokasi origin untuk display',
+          config_value: originCityName,
+          description: 'Nama kota origin untuk display'
         });
 
       if (nameError) throw nameError;
 
       toast({
         title: 'Berhasil',
-        description: 'Pengaturan origin berhasil disimpan',
+        description: 'Lokasi origin berhasil disimpan',
       });
     } catch (error) {
       console.error('Error saving origin:', error);
       toast({
         title: 'Error',
-        description: 'Gagal menyimpan pengaturan origin',
+        description: 'Gagal menyimpan lokasi origin',
         variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -157,82 +179,71 @@ export function ShippingOriginSettings() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MapPin className="h-5 w-5" />
-          Pengaturan Origin Pengiriman
+          Lokasi Origin Pengiriman
         </CardTitle>
         <CardDescription>
           Atur lokasi toko sebagai titik asal pengiriman untuk kalkulasi ongkir
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Search City */}
-        <div className="space-y-3">
-          <Label>Cari Lokasi Origin</Label>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Cari kota/kecamatan..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && searchCity()}
-            />
-            <Button onClick={searchCity} disabled={searching}>
-              {searching ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <div className="border rounded-lg divide-y max-h-64 overflow-y-auto">
-              {searchResults.map((area) => (
-                <button
-                  key={area.id}
-                  onClick={() => selectArea(area)}
-                  className="w-full px-4 py-3 text-left hover:bg-accent transition-colors"
-                >
-                  <p className="font-medium">{area.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {area.administrative_division_level_2_name}, {area.administrative_division_level_1_name}
-                  </p>
-                </button>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="province">Provinsi</Label>
+          <Select 
+            value={selectedProvinceId} 
+            onValueChange={handleProvinceChange}
+            disabled={loading}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Pilih provinsi" />
+            </SelectTrigger>
+            <SelectContent>
+              {provinces.map((province) => (
+                <SelectItem key={province.id} value={province.id.toString()}>
+                  {province.name}
+                </SelectItem>
               ))}
-            </div>
-          )}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Current Origin */}
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label>Origin Name</Label>
-            <Input
-              value={originName}
-              onChange={(e) => setOriginName(e.target.value)}
-              placeholder="Nama lokasi origin"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Biteship Area ID</Label>
-            <Input
-              value={originAreaId}
-              onChange={(e) => setOriginAreaId(e.target.value)}
-              placeholder="Area ID dari Biteship"
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="city">Kota</Label>
+          <Select 
+            value={selectedCityId} 
+            onValueChange={handleCityChange}
+            disabled={loading || !selectedProvinceId}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Pilih kota" />
+            </SelectTrigger>
+            <SelectContent>
+              {cities.map((city) => (
+                <SelectItem key={city.id} value={city.id.toString()}>
+                  {city.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Save Button */}
-        <Button onClick={saveOrigin} disabled={loading} className="w-full">
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Menyimpan...
-            </>
-          ) : (
-            'Simpan Pengaturan Origin'
-          )}
+        {originCityName && (
+          <div className="space-y-2">
+            <Label>Lokasi Saat Ini</Label>
+            <Input 
+              value={originCityName}
+              disabled
+              className="bg-muted"
+            />
+          </div>
+        )}
+
+        <Button 
+          onClick={saveOrigin} 
+          disabled={saving || !selectedCityId}
+          className="w-full"
+        >
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Simpan Lokasi Origin
         </Button>
       </CardContent>
     </Card>
