@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MapPin } from 'lucide-react';
 
 interface Province {
   id: number;
@@ -80,6 +80,7 @@ export function AddressDialog({ open, onClose, address }: AddressDialogProps) {
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [loadingSubdistricts, setLoadingSubdistricts] = useState(false);
+  const [detectingLocation, setDetectingLocation] = useState(false);
   
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<AddressFormData>({
     resolver: zodResolver(addressSchema)
@@ -245,6 +246,150 @@ export function AddressDialog({ open, onClose, address }: AddressDialogProps) {
     }
   };
 
+  const handleAutoDetectLocation = async () => {
+    if (!navigator.geolocation) {
+      toast({
+        title: 'Error',
+        description: 'Browser Anda tidak mendukung geolocation',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setDetectingLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+
+          // Use Nominatim for reverse geocoding
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
+            {
+              headers: {
+                'Accept-Language': 'id',
+              },
+            }
+          );
+
+          if (!response.ok) throw new Error('Gagal mendapatkan alamat');
+
+          const data = await response.json();
+          const address = data.address;
+
+          // Extract address components
+          const streetAddress = [
+            address.road,
+            address.house_number,
+            address.neighbourhood,
+          ].filter(Boolean).join(', ');
+
+          const village = address.village || address.suburb || address.quarter || '';
+          const district = address.city_district || address.district || '';
+          const city = address.city || address.town || address.municipality || '';
+          const province = address.state || '';
+          const postalCode = address.postcode || '';
+
+          // Find matching province
+          const matchedProvince = provinces.find(p => 
+            p.name.toLowerCase().includes(province.toLowerCase()) ||
+            province.toLowerCase().includes(p.name.toLowerCase())
+          );
+
+          if (matchedProvince) {
+            setSelectedProvinceId(matchedProvince.id.toString());
+            setValue('province', matchedProvince.name);
+            await loadCities(matchedProvince.id.toString());
+
+            // After cities are loaded, find matching city
+            setTimeout(async () => {
+              const matchedCity = cities.find(c => 
+                c.name.toLowerCase().includes(city.toLowerCase()) ||
+                city.toLowerCase().includes(c.name.toLowerCase())
+              );
+
+              if (matchedCity) {
+                setSelectedCityId(matchedCity.id.toString());
+                setValue('city', matchedCity.name);
+                await loadDistricts(matchedCity.id.toString());
+
+                // After districts are loaded, find matching district
+                setTimeout(async () => {
+                  const matchedDistrict = districts.find(d => 
+                    d.name.toLowerCase().includes(district.toLowerCase()) ||
+                    district.toLowerCase().includes(d.name.toLowerCase())
+                  );
+
+                  if (matchedDistrict) {
+                    setSelectedDistrictId(matchedDistrict.id.toString());
+                    setValue('kecamatan', matchedDistrict.name);
+                    await loadSubdistricts(matchedDistrict.id.toString());
+
+                    // After subdistricts are loaded, find matching subdistrict
+                    setTimeout(() => {
+                      const matchedSubdistrict = subdistricts.find(s => 
+                        s.name.toLowerCase().includes(village.toLowerCase()) ||
+                        village.toLowerCase().includes(s.name.toLowerCase())
+                      );
+
+                      if (matchedSubdistrict) {
+                        setSelectedSubdistrictId(matchedSubdistrict.id.toString());
+                        setValue('kelurahan', matchedSubdistrict.name);
+                      }
+                    }, 500);
+                  }
+                }, 500);
+              }
+            }, 500);
+          }
+
+          // Fill other fields
+          if (streetAddress) setValue('addressLine', streetAddress);
+          if (postalCode) setValue('postalCode', postalCode);
+
+          toast({
+            title: 'Lokasi terdeteksi',
+            description: 'Silakan periksa dan lengkapi data alamat',
+          });
+        } catch (error) {
+          console.error('Error reverse geocoding:', error);
+          toast({
+            title: 'Error',
+            description: 'Gagal mendapatkan alamat dari koordinat',
+            variant: 'destructive',
+          });
+        } finally {
+          setDetectingLocation(false);
+        }
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        let errorMessage = 'Gagal mendapatkan lokasi';
+        
+        if (error.code === error.PERMISSION_DENIED) {
+          errorMessage = 'Izin lokasi ditolak. Aktifkan izin lokasi di browser Anda.';
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          errorMessage = 'Lokasi tidak tersedia';
+        } else if (error.code === error.TIMEOUT) {
+          errorMessage = 'Waktu permintaan lokasi habis';
+        }
+
+        toast({
+          title: 'Error',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+        setDetectingLocation(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  };
+
   useEffect(() => {
     if (address) {
       reset({
@@ -335,6 +480,27 @@ export function AddressDialog({ open, onClose, address }: AddressDialogProps) {
           <DialogDescription className="text-sm">
             {address ? 'Update informasi alamat pengiriman' : 'Tambahkan alamat pengiriman baru'}
           </DialogDescription>
+          {!address && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleAutoDetectLocation}
+              disabled={detectingLocation || loading}
+              className="w-full"
+            >
+              {detectingLocation ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Mendeteksi lokasi...
+                </>
+              ) : (
+                <>
+                  <MapPin className="mr-2 h-4 w-4" />
+                  Deteksi Lokasi Otomatis
+                </>
+              )}
+            </Button>
+          )}
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
