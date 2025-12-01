@@ -21,6 +21,7 @@ interface Address {
   province: string;
   postal_code: string;
   is_default: boolean | null;
+  city_id: number | null;
 }
 
 interface AddressStepProps {

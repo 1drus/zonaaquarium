@@ -110,49 +110,7 @@ serve(async (req) => {
       });
     }
 
-    // Search city by name (for finding destination city)
-    if (action === 'searchCity') {
-      
-      // Get all provinces first
-      const provincesRes = await fetch(
-        `${RAJAONGKIR_BASE_URL}/destination/province`,
-        {
-          method: 'GET',
-          headers: { 'key': apiKey || '' },
-        }
-      );
-      const provincesData = await provincesRes.json();
-
-      // Search through all provinces to find cities matching the name
-      const matchingCities = [];
-      
-      if (provincesData?.meta?.status === 'success' && provincesData?.data) {
-        for (const province of provincesData.data) {
-          const citiesRes = await fetch(
-            `${RAJAONGKIR_BASE_URL}/destination/city/${province.id}`,
-            {
-              method: 'GET',
-              headers: { 'key': apiKey || '' },
-            }
-          );
-          const citiesData = await citiesRes.json();
-          
-          if (citiesData?.meta?.status === 'success' && citiesData?.data) {
-            const matches = citiesData.data.filter((city: any) => 
-              city.name.toLowerCase().includes(cityName.toLowerCase())
-            );
-            matchingCities.push(...matches);
-          }
-        }
-      }
-
-      return new Response(JSON.stringify({
-        meta: { status: 'success', code: 200, message: 'Success' },
-        data: matchingCities
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Note: searchCity action removed - use city_id directly from addresses table
 
     // Get shipping rates
     if (action === 'rates') {
@@ -219,7 +177,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in biteship-shipping:', error);
+    console.error('Error in rajaongkir-shipping:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(
       JSON.stringify({ error: errorMessage }), 

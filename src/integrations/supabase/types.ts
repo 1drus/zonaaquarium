@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           address_line: string
           city: string
+          city_id: number | null
           created_at: string
           id: string
           is_default: boolean | null
@@ -34,6 +35,7 @@ export type Database = {
         Insert: {
           address_line: string
           city: string
+          city_id?: number | null
           created_at?: string
           id?: string
           is_default?: boolean | null
@@ -50,6 +52,7 @@ export type Database = {
         Update: {
           address_line?: string
           city?: string
+          city_id?: number | null
           created_at?: string
           id?: string
           is_default?: boolean | null
@@ -520,6 +523,7 @@ export type Database = {
           stock_quantity: number
           updated_at: string | null
           variant_name: string
+          weight: number | null
         }
         Insert: {
           color?: string | null
@@ -533,6 +537,7 @@ export type Database = {
           stock_quantity?: number
           updated_at?: string | null
           variant_name: string
+          weight?: number | null
         }
         Update: {
           color?: string | null
@@ -546,6 +551,7 @@ export type Database = {
           stock_quantity?: number
           updated_at?: string | null
           variant_name?: string
+          weight?: number | null
         }
         Relationships: [
           {
@@ -586,6 +592,7 @@ export type Database = {
           updated_at: string
           view_count: number | null
           water_type: string | null
+          weight: number | null
         }
         Insert: {
           care_instructions?: string | null
@@ -615,6 +622,7 @@ export type Database = {
           updated_at?: string
           view_count?: number | null
           water_type?: string | null
+          weight?: number | null
         }
         Update: {
           care_instructions?: string | null
@@ -644,6 +652,7 @@ export type Database = {
           updated_at?: string
           view_count?: number | null
           water_type?: string | null
+          weight?: number | null
         }
         Relationships: [
           {

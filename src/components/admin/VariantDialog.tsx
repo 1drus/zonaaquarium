@@ -17,6 +17,7 @@ interface Variant {
   color?: string;
   price_adjustment: number;
   stock_quantity: number;
+  weight?: number;
   is_active: boolean;
 }
 
@@ -38,6 +39,7 @@ export function VariantDialog({ open, onOpenChange, variant, productId, onSucces
     color: '',
     price_adjustment: 0,
     stock_quantity: 0,
+    weight: undefined,
     is_active: true,
   });
 
@@ -53,6 +55,7 @@ export function VariantDialog({ open, onOpenChange, variant, productId, onSucces
         color: '',
         price_adjustment: 0,
         stock_quantity: 0,
+        weight: undefined,
         is_active: true,
       });
     }
@@ -175,6 +178,20 @@ export function VariantDialog({ open, onOpenChange, variant, productId, onSucces
                 min="0"
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="weight">Berat (gram)</Label>
+            <Input
+              id="weight"
+              type="number"
+              value={formData.weight || ''}
+              onChange={(e) => setFormData({ ...formData, weight: e.target.value ? parseInt(e.target.value) : undefined })}
+              placeholder="Kosongkan untuk menggunakan berat produk"
+            />
+            <p className="text-xs text-muted-foreground">
+              Jika dikosongkan, akan menggunakan berat dari produk induk
+            </p>
           </div>
 
           <div className="flex items-center space-x-2">
