@@ -41,6 +41,7 @@ interface CartItem {
     sku: string | null;
     price_adjustment: number | null;
     stock_quantity: number;
+    weight: number | null;
   } | null;
   products: {
     id: string;
@@ -49,6 +50,7 @@ interface CartItem {
     price: number;
     discount_percentage: number | null;
     stock_quantity: number;
+    weight: number;
     product_images: { image_url: string; is_primary: boolean }[];
   };
 }
@@ -65,6 +67,7 @@ interface Address {
   province: string;
   postal_code: string;
   is_default: boolean | null;
+  city_id: number | null;
 }
 
 export default function Checkout() {
@@ -144,7 +147,8 @@ export default function Checkout() {
           variant_name,
           sku,
           price_adjustment,
-          stock_quantity
+          stock_quantity,
+          weight
         ),
         products (
           id,
@@ -153,6 +157,7 @@ export default function Checkout() {
           price,
           discount_percentage,
           stock_quantity,
+          weight,
           product_images (image_url, is_primary)
         )
       `)
@@ -188,6 +193,14 @@ export default function Checkout() {
       const discount = item.products.discount_percentage || 0;
       const finalPrice = price - (price * discount / 100);
       return sum + (finalPrice * item.quantity);
+    }, 0);
+  };
+
+  const calculateTotalWeight = () => {
+    return cartItems.reduce((sum, item) => {
+      // Use variant weight if available, otherwise use product weight
+      const weight = item.product_variants?.weight || item.products.weight || 500;
+      return sum + (weight * item.quantity);
     }, 0);
   };
 
@@ -586,6 +599,7 @@ export default function Checkout() {
                 selectedAddress={selectedAddress}
                 shippingMethod={shippingMethod}
                 shippingCost={shippingCost}
+                totalWeight={calculateTotalWeight()}
                 onSelectShipping={handleSelectShipping}
               />
             )}

@@ -37,6 +37,7 @@ interface District {
 interface Subdistrict {
   id: number;
   name: string;
+  zip_code?: string;
 }
 
 interface AddressDialogProps {
@@ -243,6 +244,10 @@ export function AddressDialog({ open, onClose, address }: AddressDialogProps) {
     const subdistrict = subdistricts.find(s => s.id.toString() === subdistrictId);
     if (subdistrict) {
       setValue('kelurahan', subdistrict.name);
+      // Auto-fill postal code if available
+      if (subdistrict.zip_code) {
+        setValue('postalCode', subdistrict.zip_code);
+      }
     }
   };
 
@@ -300,57 +305,21 @@ export function AddressDialog({ open, onClose, address }: AddressDialogProps) {
           if (matchedProvince) {
             setSelectedProvinceId(matchedProvince.id.toString());
             setValue('province', matchedProvince.name);
+            
+            // Load cities and wait for completion
             await loadCities(matchedProvince.id.toString());
-
-            // After cities are loaded, find matching city
-            setTimeout(async () => {
-              const matchedCity = cities.find(c => 
-                c.name.toLowerCase().includes(city.toLowerCase()) ||
-                city.toLowerCase().includes(c.name.toLowerCase())
-              );
-
-              if (matchedCity) {
-                setSelectedCityId(matchedCity.id.toString());
-                setValue('city', matchedCity.name);
-                await loadDistricts(matchedCity.id.toString());
-
-                // After districts are loaded, find matching district
-                setTimeout(async () => {
-                  const matchedDistrict = districts.find(d => 
-                    d.name.toLowerCase().includes(district.toLowerCase()) ||
-                    district.toLowerCase().includes(d.name.toLowerCase())
-                  );
-
-                  if (matchedDistrict) {
-                    setSelectedDistrictId(matchedDistrict.id.toString());
-                    setValue('kecamatan', matchedDistrict.name);
-                    await loadSubdistricts(matchedDistrict.id.toString());
-
-                    // After subdistricts are loaded, find matching subdistrict
-                    setTimeout(() => {
-                      const matchedSubdistrict = subdistricts.find(s => 
-                        s.name.toLowerCase().includes(village.toLowerCase()) ||
-                        village.toLowerCase().includes(s.name.toLowerCase())
-                      );
-
-                      if (matchedSubdistrict) {
-                        setSelectedSubdistrictId(matchedSubdistrict.id.toString());
-                        setValue('kelurahan', matchedSubdistrict.name);
-                      }
-                    }, 500);
-                  }
-                }, 500);
-              }
-            }, 500);
+            
+            // Wait a bit for state to update
+            await new Promise(resolve => setTimeout(resolve, 300));
           }
 
-          // Fill other fields
+          // Fill other fields immediately
           if (streetAddress) setValue('addressLine', streetAddress);
           if (postalCode) setValue('postalCode', postalCode);
 
           toast({
             title: 'Lokasi terdeteksi',
-            description: 'Silakan periksa dan lengkapi data alamat',
+            description: 'Provinsi berhasil diisi. Silakan pilih kota, kecamatan, dan kelurahan secara manual.',
           });
         } catch (error) {
           console.error('Error reverse geocoding:', error);
@@ -438,6 +407,7 @@ export function AddressDialog({ open, onClose, address }: AddressDialogProps) {
       city: data.city,
       province: data.province,
       postal_code: data.postalCode,
+      city_id: selectedCityId ? parseInt(selectedCityId) : null,
       is_default: isDefault
     };
 

@@ -10,12 +10,14 @@ interface Address {
   id: string;
   city: string;
   province: string;
+  city_id: number | null;
 }
 
 interface ShippingStepProps {
   selectedAddress: Address | null;
   shippingMethod: string;
   shippingCost: number;
+  totalWeight: number;
   onSelectShipping: (id: string, name: string, cost: number) => void;
 }
 
@@ -31,57 +33,35 @@ export function ShippingStep({
   selectedAddress,
   shippingMethod,
   shippingCost,
+  totalWeight,
   onSelectShipping,
 }: ShippingStepProps) {
   const { toast } = useToast();
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
   const [loading, setLoading] = useState(false);
-  const [cityId, setCityId] = useState<string>('');
 
-  // Get city ID from RajaOngkir based on city name
-  useEffect(() => {
-    const getCityId = async () => {
-      if (!selectedAddress) return;
-
-      try {
-        const { data, error } = await supabase.functions.invoke('rajaongkir-shipping', {
-          body: {
-            action: 'searchCity',
-            cityName: selectedAddress.city,
-          },
-        });
-
-        if (error) throw error;
-
-        if (data?.data && data.data.length > 0) {
-          // Use the first matching city
-          setCityId(data.data[0].id.toString());
-        } else {
-          console.log('City not found:', selectedAddress.city);
-        }
-      } catch (error) {
-        console.error('Error getting city ID:', error);
-      }
-    };
-
-    getCityId();
-  }, [selectedAddress]);
-
-  // Fetch shipping costs from RajaOngkir
+  // Fetch shipping costs from RajaOngkir using city_id directly
   useEffect(() => {
     const fetchShippingCosts = async () => {
-      if (!cityId || !selectedAddress) return;
+      if (!selectedAddress?.city_id) {
+        toast({
+          title: 'Alamat belum lengkap',
+          description: 'Alamat tidak memiliki city_id. Silakan update alamat Anda.',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       setLoading(true);
       try {
-        // Estimate weight based on cart (example: 1kg = 1000g)
-        const estimatedWeight = 1000; // You can make this dynamic based on cart items
+        // Use actual weight or minimum 100g
+        const weight = Math.max(totalWeight, 100);
 
         const { data, error } = await supabase.functions.invoke('rajaongkir-shipping', {
           body: {
             action: 'rates',
-            destinationCityId: cityId,
-            weight: estimatedWeight,
+            destinationCityId: selectedAddress.city_id.toString(),
+            weight: weight,
           },
         });
 
@@ -136,7 +116,7 @@ export function ShippingStep({
     };
 
     fetchShippingCosts();
-  }, [cityId, selectedAddress, toast]);
+  }, [selectedAddress, totalWeight, toast]);
 
   if (!selectedAddress) {
     return (
@@ -155,7 +135,7 @@ export function ShippingStep({
       <div className="mb-4">
         <h2 className="text-xl font-semibold mb-2">Pilih Metode Pengiriman</h2>
         <p className="text-sm text-muted-foreground">
-          Pengiriman ke: {selectedAddress.city}, {selectedAddress.province}
+          Pengiriman ke: {selectedAddress.city}, {selectedAddress.province} (Total: {totalWeight}g)
         </p>
       </div>
 

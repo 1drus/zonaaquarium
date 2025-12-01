@@ -54,6 +54,7 @@ export function ProductDialog({ open, onClose, product }: ProductDialogProps) {
     care_instructions: '',
     min_order: '1',
     max_order: '',
+    weight: '500',
   });
 
   useEffect(() => {
@@ -81,6 +82,7 @@ export function ProductDialog({ open, onClose, product }: ProductDialogProps) {
         care_instructions: product.care_instructions || '',
         min_order: product.min_order?.toString() || '1',
         max_order: product.max_order?.toString() || '',
+        weight: product.weight?.toString() || '500',
       });
       loadProductImages(product.id);
     } else {
@@ -132,6 +134,7 @@ export function ProductDialog({ open, onClose, product }: ProductDialogProps) {
       care_instructions: '',
       min_order: '1',
       max_order: '',
+      weight: '500',
     });
     setImageFiles([]);
     setExistingImages([]);
@@ -241,6 +244,7 @@ export function ProductDialog({ open, onClose, product }: ProductDialogProps) {
         care_instructions: formData.care_instructions || null,
         min_order: Number(formData.min_order),
         max_order: formData.max_order ? Number(formData.max_order) : null,
+        weight: Number(formData.weight),
       };
 
       let productId: string;
@@ -399,6 +403,18 @@ export function ProductDialog({ open, onClose, product }: ProductDialogProps) {
                 value={formData.stock_quantity}
                 onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
                 required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="weight">Berat (gram) *</Label>
+              <Input
+                id="weight"
+                type="number"
+                value={formData.weight}
+                onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                required
+                placeholder="500"
               />
             </div>
 
