@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { MapPin, Truck, CreditCard, Package } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { MapPin, Truck, CreditCard, Package, Gift } from 'lucide-react';
 
 interface CartItem {
   id: string;
@@ -31,17 +32,25 @@ interface Address {
   postal_code: string;
 }
 
+interface TierConfig {
+  tier_name: string;
+  discount_percentage: number;
+  free_shipping_threshold: number | null;
+}
+
 interface OrderSummaryProps {
   cartItems: CartItem[];
   selectedAddress: Address | null;
   shippingMethod: string;
   shippingCost: number;
+  originalShippingCost?: number;
   paymentMethod: string;
   notes: string;
   onNotesChange: (notes: string) => void;
   subtotal: number;
   voucherDiscount?: number;
   voucherCode?: string;
+  tierConfig?: TierConfig | null;
 }
 
 export function OrderSummary({
@@ -49,13 +58,16 @@ export function OrderSummary({
   selectedAddress,
   shippingMethod,
   shippingCost,
+  originalShippingCost = 0,
   paymentMethod,
   notes,
   onNotesChange,
   subtotal,
   voucherDiscount = 0,
   voucherCode,
+  tierConfig,
 }: OrderSummaryProps) {
+  const shippingDiscount = originalShippingCost - shippingCost;
   const total = subtotal - voucherDiscount + shippingCost;
 
   return (
@@ -140,10 +152,29 @@ export function OrderSummary({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center">
             <p className="font-medium">{shippingMethod}</p>
-            <p className="font-semibold">Rp {shippingCost.toLocaleString('id-ID')}</p>
+            <div className="text-right">
+              {shippingDiscount > 0 ? (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                    <Gift className="h-3 w-3 mr-1" />
+                    GRATIS
+                  </Badge>
+                  <span className="text-sm text-muted-foreground line-through">
+                    Rp {originalShippingCost.toLocaleString('id-ID')}
+                  </span>
+                </div>
+              ) : (
+                <p className="font-semibold">Rp {shippingCost.toLocaleString('id-ID')}</p>
+              )}
+            </div>
           </div>
+          {shippingDiscount > 0 && tierConfig && (
+            <p className="text-sm text-green-600 mt-2">
+              Gratis ongkir member {tierConfig.tier_name}
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -192,8 +223,23 @@ export function OrderSummary({
           )}
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Ongkos Kirim</span>
-            <span>Rp {shippingCost.toLocaleString('id-ID')}</span>
+            {shippingDiscount > 0 ? (
+              <div className="flex items-center gap-2">
+                <span className="text-green-600 font-medium">GRATIS</span>
+                <span className="text-muted-foreground line-through text-xs">
+                  Rp {originalShippingCost.toLocaleString('id-ID')}
+                </span>
+              </div>
+            ) : (
+              <span>Rp {shippingCost.toLocaleString('id-ID')}</span>
+            )}
           </div>
+          {shippingDiscount > 0 && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span>Diskon Ongkir (Member {tierConfig?.tier_name})</span>
+              <span>-Rp {shippingDiscount.toLocaleString('id-ID')}</span>
+            </div>
+          )}
           <Separator />
           <div className="flex justify-between text-lg font-bold">
             <span>Total Pembayaran</span>
