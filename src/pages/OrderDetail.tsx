@@ -12,7 +12,8 @@ import { OrderTimeline } from '@/components/orders/OrderTimeline';
 import { PaymentProofUpload } from '@/components/orders/PaymentProofUpload';
 import { ReviewDialog } from '@/components/orders/ReviewDialog';
 import { CancellationRequest } from '@/components/orders/CancellationRequest';
-import { ArrowLeft, Download, Package, MapPin, Truck, CreditCard, Star, XCircle } from 'lucide-react';
+import { InvoicePrintView } from '@/components/orders/InvoicePrintView';
+import { ArrowLeft, FileText, Package, MapPin, Truck, CreditCard, Star, XCircle } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 
 interface OrderDetail {
@@ -66,6 +67,7 @@ export default function OrderDetail() {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [reviewedProducts, setReviewedProducts] = useState<Set<string>>(new Set());
   const [cancellationDialogOpen, setCancellationDialogOpen] = useState(false);
+  const [showInvoice, setShowInvoice] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -144,7 +146,7 @@ export default function OrderDetail() {
   };
 
   const handlePrintInvoice = () => {
-    window.print();
+    setShowInvoice(true);
   };
 
   const handleReview = (item: any) => {
@@ -433,8 +435,8 @@ export default function OrderDetail() {
 
               {/* Print Invoice */}
               <Button variant="outline" className="w-full print:hidden" onClick={handlePrintInvoice}>
-                <Download className="mr-2 h-4 w-4" />
-                Cetak Invoice
+                <FileText className="mr-2 h-4 w-4" />
+                Lihat Invoice
               </Button>
 
               {/* Cancel Order Button */}
@@ -473,6 +475,14 @@ export default function OrderDetail() {
         orderNumber={order.order_number}
         onSuccess={loadOrder}
       />
+
+      {/* Invoice Print View */}
+      {showInvoice && (
+        <InvoicePrintView
+          order={order}
+          onClose={() => setShowInvoice(false)}
+        />
+      )}
     </div>
   );
 }
