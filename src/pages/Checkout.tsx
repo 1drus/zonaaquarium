@@ -30,6 +30,12 @@ interface Voucher {
   max_discount: number | null;
 }
 
+interface TierConfig {
+  tier_name: string;
+  discount_percentage: number;
+  free_shipping_threshold: number | null;
+}
+
 interface CartItem {
   id: string;
   product_id: string;
@@ -87,11 +93,13 @@ export default function Checkout() {
   const [shippingMethod, setShippingMethod] = useState('');
   const [shippingMethodName, setShippingMethodName] = useState('');
   const [shippingCost, setShippingCost] = useState(0);
+  const [originalShippingCost, setOriginalShippingCost] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('midtrans');
   const [notes, setNotes] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(
     location.state?.voucher || null
   );
+  const [tierConfig, setTierConfig] = useState<TierConfig | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -99,6 +107,7 @@ export default function Checkout() {
       return;
     }
     loadCartItems();
+    loadTierConfig();
     
     // Load Midtrans Snap script for sandbox
     const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY;
@@ -181,6 +190,34 @@ export default function Checkout() {
     setLoading(false);
   };
 
+  const loadTierConfig = async () => {
+    if (!user) return;
+
+    try {
+      // Get user's current tier from member_progress
+      const { data: progressData } = await supabase
+        .from('member_progress')
+        .select('current_tier')
+        .eq('user_id', user.id)
+        .single();
+
+      const currentTier = progressData?.current_tier || 'Bronze';
+
+      // Get tier config
+      const { data: tierData } = await supabase
+        .from('member_tier_config')
+        .select('tier_name, discount_percentage, free_shipping_threshold')
+        .eq('tier_name', currentTier)
+        .single();
+
+      if (tierData) {
+        setTierConfig(tierData);
+      }
+    } catch (error) {
+      console.error('Error loading tier config:', error);
+    }
+  };
+
   const calculateSubtotal = () => {
     return cartItems.reduce((sum, item) => {
       let price = item.products.price;
@@ -217,6 +254,17 @@ export default function Checkout() {
       discount = appliedVoucher.discount_value;
     }
     return Math.min(discount, subtotal);
+  };
+
+  const calculateShippingDiscount = (subtotal: number, originalCost: number) => {
+    if (!tierConfig?.free_shipping_threshold) return 0;
+    
+    // If subtotal meets free shipping threshold, shipping is free
+    if (subtotal >= tierConfig.free_shipping_threshold) {
+      return originalCost;
+    }
+    
+    return 0;
   };
 
   const handleSubmitOrder = async () => {
@@ -525,7 +573,12 @@ export default function Checkout() {
   const handleSelectShipping = (id: string, name: string, cost: number) => {
     setShippingMethod(id);
     setShippingMethodName(name);
-    setShippingCost(cost);
+    setOriginalShippingCost(cost);
+    
+    // Apply free shipping if subtotal meets threshold
+    const subtotal = calculateSubtotal();
+    const shippingDiscount = calculateShippingDiscount(subtotal, cost);
+    setShippingCost(cost - shippingDiscount);
   };
 
   const handleNext = () => {
@@ -601,6 +654,8 @@ export default function Checkout() {
                 shippingCost={shippingCost}
                 totalWeight={calculateTotalWeight()}
                 onSelectShipping={handleSelectShipping}
+                tierConfig={tierConfig}
+                subtotal={calculateSubtotal()}
               />
             )}
 
@@ -617,12 +672,14 @@ export default function Checkout() {
                 selectedAddress={selectedAddress}
                 shippingMethod={shippingMethod}
                 shippingCost={shippingCost}
+                originalShippingCost={originalShippingCost}
                 paymentMethod={paymentMethod}
                 notes={notes}
                 onNotesChange={setNotes}
                 subtotal={calculateSubtotal()}
                 voucherDiscount={calculateVoucherDiscount(calculateSubtotal())}
                 voucherCode={appliedVoucher?.code}
+                tierConfig={tierConfig}
               />
             )}
           </div>
