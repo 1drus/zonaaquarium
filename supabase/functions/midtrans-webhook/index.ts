@@ -82,9 +82,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     let orderStatus = "menunggu_pembayaran";
     let paymentStatus = "pending";
+    const isPaid = transactionStatus === "capture" || transactionStatus === "settlement";
 
     // Map Midtrans status to our status
-    if (transactionStatus === "capture" || transactionStatus === "settlement") {
+    if (isPaid) {
       orderStatus = "diproses";
       paymentStatus = "paid";
     } else if (transactionStatus === "pending") {
@@ -101,7 +102,7 @@ const handler = async (req: Request): Promise<Response> => {
       .update({
         status: orderStatus,
         payment_status: paymentStatus,
-        paid_at: (transactionStatus === "capture" || transactionStatus === "settlement") ? new Date().toISOString() : null,
+        paid_at: isPaid ? new Date().toISOString() : null,
         payment_method: paymentType,
         updated_at: new Date().toISOString(),
       })
@@ -113,6 +114,28 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log(`Order ${orderId} updated: ${orderStatus}, ${paymentStatus}`);
+
+    // Send invoice email if payment successful
+    if (isPaid) {
+      try {
+        const invoiceResponse = await fetch(`${SUPABASE_URL}/functions/v1/send-invoice-email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+          body: JSON.stringify({ orderId }),
+        });
+        
+        if (invoiceResponse.ok) {
+          console.log(`Invoice email sent for order ${orderId}`);
+        } else {
+          console.error("Failed to send invoice email:", await invoiceResponse.text());
+        }
+      } catch (emailError) {
+        console.error("Error sending invoice email:", emailError);
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true }),

@@ -160,11 +160,26 @@ export function PaymentVerification() {
 
       if (error) throw error;
 
-      toast.success(
-        verifyAction === 'approve'
-          ? 'Pembayaran berhasil diverifikasi'
-          : 'Pembayaran ditolak'
-      );
+      // Send invoice email if payment approved
+      if (verifyAction === 'approve') {
+        try {
+          const { error: invoiceError } = await supabase.functions.invoke('send-invoice-email', {
+            body: { orderId: selectedOrder.id }
+          });
+          
+          if (invoiceError) {
+            console.error('Failed to send invoice email:', invoiceError);
+            toast.warning('Pembayaran diverifikasi, tapi gagal mengirim invoice email');
+          } else {
+            toast.success('Pembayaran berhasil diverifikasi & invoice dikirim ke email');
+          }
+        } catch (emailError) {
+          console.error('Invoice email error:', emailError);
+          toast.success('Pembayaran berhasil diverifikasi');
+        }
+      } else {
+        toast.success('Pembayaran ditolak');
+      }
 
       setVerifyDialogOpen(false);
       setAdminNotes('');
