@@ -100,6 +100,7 @@ export default function Checkout() {
     location.state?.voucher || null
   );
   const [tierConfig, setTierConfig] = useState<TierConfig | null>(null);
+  const [midtransConfig, setMidtransConfig] = useState<{clientKey: string; isProduction: boolean} | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -108,38 +109,92 @@ export default function Checkout() {
     }
     loadCartItems();
     loadTierConfig();
+    loadMidtransConfig();
+  }, [user, navigate]);
+
+  // Load Midtrans Snap script when config is available
+  useEffect(() => {
+    if (!midtransConfig?.clientKey) return;
+
+    const script = document.createElement('script');
+    const snapUrl = midtransConfig.isProduction 
+      ? 'https://app.midtrans.com/snap/snap.js'
+      : 'https://app.sandbox.midtrans.com/snap/snap.js';
     
-    // Load Midtrans Snap script for sandbox
-    const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY;
-    if (clientKey) {
-      const script = document.createElement('script');
-      script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
-      script.setAttribute('data-client-key', clientKey);
-      script.async = true;
-      
-      script.onload = () => {
-        console.log('Midtrans Snap script loaded successfully');
-        setSnapLoaded(true);
-      };
-      
-      script.onerror = () => {
-        console.error('Failed to load Midtrans Snap script');
+    script.src = snapUrl;
+    script.setAttribute('data-client-key', midtransConfig.clientKey);
+    script.async = true;
+    
+    script.onload = () => {
+      console.log('Midtrans Snap script loaded successfully');
+      setSnapLoaded(true);
+    };
+    
+    script.onerror = () => {
+      console.error('Failed to load Midtrans Snap script');
+      toast({
+        variant: 'destructive',
+        title: 'Gagal memuat sistem pembayaran',
+        description: 'Silakan refresh halaman dan coba lagi.',
+      });
+    };
+    
+    document.body.appendChild(script);
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, [midtransConfig]);
+
+  const loadMidtransConfig = async () => {
+    try {
+      // Get Midtrans environment
+      const { data: envData, error: envError } = await supabase
+        .from('system_config')
+        .select('config_value')
+        .eq('config_key', 'midtrans_environment')
+        .single();
+
+      if (envError) throw envError;
+
+      const isProduction = envData?.config_value === 'production';
+      const clientKeyConfig = isProduction 
+        ? 'midtrans_client_key_production' 
+        : 'midtrans_client_key_sandbox';
+
+      // Get client key based on environment
+      const { data: keyData, error: keyError } = await supabase
+        .from('system_config')
+        .select('config_value')
+        .eq('config_key', clientKeyConfig)
+        .single();
+
+      if (keyError) throw keyError;
+
+      if (keyData?.config_value && !keyData.config_value.includes('YOUR_')) {
+        setMidtransConfig({
+          clientKey: keyData.config_value,
+          isProduction
+        });
+      } else {
+        console.error('Midtrans client key not configured');
         toast({
           variant: 'destructive',
-          title: 'Gagal memuat sistem pembayaran',
-          description: 'Silakan refresh halaman dan coba lagi.',
+          title: 'Sistem pembayaran belum dikonfigurasi',
+          description: 'Silakan hubungi administrator untuk mengkonfigurasi pembayaran.',
         });
-      };
-      
-      document.body.appendChild(script);
-
-      return () => {
-        if (document.body.contains(script)) {
-          document.body.removeChild(script);
-        }
-      };
+      }
+    } catch (error) {
+      console.error('Error loading Midtrans config:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Gagal memuat konfigurasi pembayaran',
+        description: 'Silakan refresh halaman dan coba lagi.',
+      });
     }
-  }, [user, navigate]);
+  };
 
   const loadCartItems = async () => {
     if (!user) return;
