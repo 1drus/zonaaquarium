@@ -155,10 +155,11 @@ export default function Checkout() {
         .from('system_config')
         .select('config_value')
         .eq('config_key', 'midtrans_environment')
-        .single();
+        .maybeSingle();
 
       if (envError) throw envError;
 
+      // Default to sandbox if not configured
       const isProduction = envData?.config_value === 'production';
       const clientKeyConfig = isProduction 
         ? 'midtrans_client_key_production' 
@@ -169,7 +170,7 @@ export default function Checkout() {
         .from('system_config')
         .select('config_value')
         .eq('config_key', clientKeyConfig)
-        .single();
+        .maybeSingle();
 
       if (keyError) throw keyError;
 
@@ -183,7 +184,7 @@ export default function Checkout() {
         toast({
           variant: 'destructive',
           title: 'Sistem pembayaran belum dikonfigurasi',
-          description: 'Silakan hubungi administrator untuk mengkonfigurasi pembayaran.',
+          description: 'Silakan buka Admin → Pengaturan Sistem untuk memasukkan Midtrans Client Key.',
         });
       }
     } catch (error) {
