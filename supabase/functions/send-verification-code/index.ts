@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { encode as encodeBase64 } from "https://deno.land/std@0.190.0/encoding/base64.ts";
 
 const brevoApiKey = Deno.env.get("BREVO_API_KEY");
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -17,6 +18,38 @@ const VerificationRequestSchema = z.object({
   phone: z.string().trim().regex(/^[0-9+\-\s()]*$/, { message: "Invalid phone number" }).min(10).max(15),
   password: z.string().min(8, { message: "Password must be at least 8 characters" }).max(100)
 });
+
+// Encrypt password using AES-GCM with service role key derived encryption
+async function encryptPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  
+  // Derive encryption key from service role key (use first 32 bytes for AES-256)
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(supabaseServiceKey.slice(0, 32)),
+    { name: "AES-GCM" },
+    false,
+    ["encrypt"]
+  );
+  
+  // Generate random IV
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  
+  // Encrypt password
+  const encryptedData = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    keyMaterial,
+    encoder.encode(password)
+  );
+  
+  // Combine IV + encrypted data and encode as base64
+  const combined = new Uint8Array(iv.length + new Uint8Array(encryptedData).length);
+  combined.set(iv);
+  combined.set(new Uint8Array(encryptedData), iv.length);
+  
+  // Convert to ArrayBuffer for encodeBase64
+  return encodeBase64(combined.buffer);
+}
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -81,7 +114,10 @@ const handler = async (req: Request): Promise<Response> => {
       .delete()
       .eq('email', email);
     
-    // Save verification code to database
+    // Encrypt password before storing
+    const encryptedPassword = await encryptPassword(password);
+    
+    // Save verification code to database with encrypted password
     const { error: dbError } = await supabase
       .from('email_verification_codes')
       .insert({
@@ -89,7 +125,7 @@ const handler = async (req: Request): Promise<Response> => {
         code,
         full_name: fullName,
         phone,
-        password_hash: password,
+        password_hash: encryptedPassword,
         expires_at: expiresAt
       });
     

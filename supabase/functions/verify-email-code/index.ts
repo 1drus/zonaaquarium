@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { decode as decodeBase64 } from "https://deno.land/std@0.190.0/encoding/base64.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -14,6 +15,35 @@ const VerifyRequestSchema = z.object({
   email: z.string().trim().email({ message: "Invalid email address" }).max(255),
   code: z.string().length(6, { message: "Code must be 6 digits" }).regex(/^[0-9]+$/, { message: "Code must be numeric" })
 });
+
+// Decrypt password using AES-GCM with service role key derived encryption
+async function decryptPassword(encryptedData: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  
+  // Derive decryption key from service role key (use first 32 bytes for AES-256)
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(supabaseServiceKey.slice(0, 32)),
+    { name: "AES-GCM" },
+    false,
+    ["decrypt"]
+  );
+  
+  // Decode base64 and extract IV + encrypted data
+  const combined = decodeBase64(encryptedData);
+  const iv = combined.slice(0, 12);
+  const ciphertext = combined.slice(12);
+  
+  // Decrypt password
+  const decryptedData = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    keyMaterial,
+    ciphertext
+  );
+  
+  return decoder.decode(decryptedData);
+}
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -97,10 +127,20 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
     
+    // Decrypt the stored password
+    let plainPassword: string;
+    try {
+      plainPassword = await decryptPassword(verificationData.password_hash);
+    } catch (decryptError) {
+      console.error("Failed to decrypt password - may be legacy plain text:", decryptError);
+      // Fallback for any existing plain text passwords (legacy support)
+      plainPassword = verificationData.password_hash;
+    }
+    
     // Create user account with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: verificationData.email,
-      password: verificationData.password_hash,
+      password: plainPassword,
       email_confirm: true,
       user_metadata: {
         full_name: verificationData.full_name,
@@ -122,16 +162,16 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log("User created successfully:", authData.user?.id);
     
-    // Mark code as verified
+    // Mark code as verified and clear sensitive data
     await supabase
       .from('email_verification_codes')
-      .update({ verified: true })
+      .update({ verified: true, password_hash: '[REDACTED]' })
       .eq('id', verificationData.id);
     
     // Create session for auto-login
     const { data: sessionData, error: signInError } = await supabase.auth.signInWithPassword({
       email: verificationData.email,
-      password: verificationData.password_hash
+      password: plainPassword
     });
     
     if (signInError) {
