@@ -143,7 +143,7 @@ export function ShippingOriginSettings() {
           config_key: 'shipping_origin_city_id',
           config_value: selectedCityId,
           description: 'RajaOngkir City ID untuk lokasi toko (Origin pengiriman)'
-        });
+        }, { onConflict: 'config_key' });
 
       if (cityError) throw cityError;
 
@@ -154,7 +154,7 @@ export function ShippingOriginSettings() {
           config_key: 'shipping_origin_name',
           config_value: originCityName,
           description: 'Nama kota origin untuk display'
-        });
+        }, { onConflict: 'config_key' });
 
       if (nameError) throw nameError;
 
