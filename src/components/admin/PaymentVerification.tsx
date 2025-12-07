@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -14,14 +13,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -29,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Search, Eye, CheckCircle, XCircle, Clock, Loader2, Receipt } from 'lucide-react';
+import { Search, CreditCard, CheckCircle, Clock, XCircle, Loader2, RefreshCw, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
@@ -37,8 +28,7 @@ interface Order {
   id: string;
   order_number: string;
   total_amount: number;
-  payment_method: string;
-  payment_proof_url: string | null;
+  payment_method: string | null;
   payment_status: string;
   status: string;
   created_at: string;
@@ -53,17 +43,31 @@ export function PaymentVerification() {
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('pending');
-  
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
-  const [imageDialogOpen, setImageDialogOpen] = useState(false);
-  const [verifyAction, setVerifyAction] = useState<'approve' | 'reject'>('approve');
-  const [adminNotes, setAdminNotes] = useState('');
-  const [processing, setProcessing] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     loadOrders();
+    
+    // Set up realtime subscription for order updates
+    const channel = supabase
+      .channel('payment-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders'
+        },
+        (payload) => {
+          console.log('Payment status change:', payload);
+          loadOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
@@ -79,14 +83,12 @@ export function PaymentVerification() {
           order_number,
           total_amount,
           payment_method,
-          payment_proof_url,
           payment_status,
           status,
           created_at,
           paid_at,
           user_id
         `)
-        .not('payment_proof_url', 'is', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -135,84 +137,44 @@ export function PaymentVerification() {
     setFilteredOrders(filtered);
   };
 
-  const handleVerifyPayment = async () => {
-    if (!selectedOrder) return;
-
-    setProcessing(true);
-    try {
-      const updates: any = {
-        admin_notes: adminNotes || null,
-      };
-
-      if (verifyAction === 'approve') {
-        updates.payment_status = 'paid';
-        updates.status = 'diproses';
-        updates.paid_at = new Date().toISOString();
-      } else {
-        updates.payment_status = 'failed';
-        updates.payment_proof_url = null;
-      }
-
-      const { error } = await supabase
-        .from('orders')
-        .update(updates)
-        .eq('id', selectedOrder.id);
-
-      if (error) throw error;
-
-      // Send invoice email if payment approved
-      if (verifyAction === 'approve') {
-        try {
-          const { error: invoiceError } = await supabase.functions.invoke('send-invoice-email', {
-            body: { orderId: selectedOrder.id }
-          });
-          
-          if (invoiceError) {
-            console.error('Failed to send invoice email:', invoiceError);
-            toast.warning('Pembayaran diverifikasi, tapi gagal mengirim invoice email');
-          } else {
-            toast.success('Pembayaran berhasil diverifikasi & invoice dikirim ke email');
-          }
-        } catch (emailError) {
-          console.error('Invoice email error:', emailError);
-          toast.success('Pembayaran berhasil diverifikasi');
-        }
-      } else {
-        toast.success('Pembayaran ditolak');
-      }
-
-      setVerifyDialogOpen(false);
-      setAdminNotes('');
-      loadOrders();
-    } catch (error: any) {
-      console.error('Error verifying payment:', error);
-      toast.error(error.message || 'Gagal memverifikasi pembayaran');
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const openVerifyDialog = (order: Order, action: 'approve' | 'reject') => {
-    setSelectedOrder(order);
-    setVerifyAction(action);
-    setAdminNotes('');
-    setVerifyDialogOpen(true);
-  };
-
-  const openImageDialog = (order: Order) => {
-    setSelectedOrder(order);
-    setImageDialogOpen(true);
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; variant: any }> = {
-      pending: { label: 'Menunggu Verifikasi', variant: 'secondary' },
-      paid: { label: 'Terverifikasi', variant: 'default' },
-      failed: { label: 'Ditolak', variant: 'destructive' },
+  const getStatusBadge = (paymentStatus: string) => {
+    const statusConfig: Record<string, { label: string; variant: any; icon: any }> = {
+      pending: { label: 'Menunggu Pembayaran', variant: 'secondary', icon: Clock },
+      paid: { label: 'Lunas', variant: 'default', icon: CheckCircle },
+      failed: { label: 'Gagal', variant: 'destructive', icon: XCircle },
+      expired: { label: 'Kadaluarsa', variant: 'outline', icon: XCircle },
     };
 
-    const config = statusConfig[status] || { label: status, variant: 'secondary' };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const config = statusConfig[paymentStatus] || { label: paymentStatus, variant: 'secondary', icon: Clock };
+    const Icon = config.icon;
+    return (
+      <Badge variant={config.variant} className="gap-1">
+        <Icon className="h-3 w-3" />
+        {config.label}
+      </Badge>
+    );
+  };
+
+  const getPaymentMethodBadge = (method: string | null) => {
+    if (!method) return <span className="text-muted-foreground">-</span>;
+    
+    const methodLabels: Record<string, string> = {
+      'credit_card': 'Kartu Kredit',
+      'bank_transfer': 'Transfer Bank',
+      'echannel': 'Mandiri Bill',
+      'bca_va': 'BCA VA',
+      'bni_va': 'BNI VA',
+      'bri_va': 'BRI VA',
+      'permata_va': 'Permata VA',
+      'gopay': 'GoPay',
+      'shopeepay': 'ShopeePay',
+      'qris': 'QRIS',
+      'cstore': 'Convenience Store',
+      'akulaku': 'Akulaku',
+      'kredivo': 'Kredivo',
+    };
+
+    return <Badge variant="outline">{methodLabels[method] || method}</Badge>;
   };
 
   if (loading) {
@@ -223,18 +185,60 @@ export function PaymentVerification() {
     );
   }
 
+  // Calculate stats
+  const stats = {
+    total: orders.length,
+    pending: orders.filter(o => o.payment_status === 'pending').length,
+    paid: orders.filter(o => o.payment_status === 'paid').length,
+    failed: orders.filter(o => o.payment_status === 'failed' || o.payment_status === 'expired').length,
+  };
+
   return (
-    <>
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground">Total Transaksi</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+            <p className="text-xs text-muted-foreground">Menunggu Bayar</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-green-600">{stats.paid}</div>
+            <p className="text-xs text-muted-foreground">Lunas</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-red-600">{stats.failed}</div>
+            <p className="text-xs text-muted-foreground">Gagal/Expired</p>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Receipt className="h-5 w-5 text-primary" />
-              <CardTitle>Verifikasi Pembayaran</CardTitle>
+              <CreditCard className="h-5 w-5 text-primary" />
+              <CardTitle>Status Pembayaran Midtrans</CardTitle>
             </div>
-            <Badge variant="outline">
-              {filteredOrders.length} pembayaran
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={loadOrders}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              <Badge variant="outline">
+                {filteredOrders.length} transaksi
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -254,9 +258,10 @@ export function PaymentVerification() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Status</SelectItem>
-                <SelectItem value="pending">Menunggu Verifikasi</SelectItem>
-                <SelectItem value="paid">Terverifikasi</SelectItem>
-                <SelectItem value="failed">Ditolak</SelectItem>
+                <SelectItem value="pending">Menunggu Bayar</SelectItem>
+                <SelectItem value="paid">Lunas</SelectItem>
+                <SelectItem value="failed">Gagal</SelectItem>
+                <SelectItem value="expired">Kadaluarsa</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -268,17 +273,17 @@ export function PaymentVerification() {
                   <TableHead>Order</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Total</TableHead>
-                  <TableHead>Metode</TableHead>
-                  <TableHead>Tanggal</TableHead>
+                  <TableHead>Metode Bayar</TableHead>
+                  <TableHead>Tanggal Order</TableHead>
+                  <TableHead>Tanggal Bayar</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredOrders.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                      Tidak ada data pembayaran
+                      Tidak ada data transaksi
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -292,175 +297,39 @@ export function PaymentVerification() {
                         Rp {order.total_amount.toLocaleString('id-ID')}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{order.payment_method}</Badge>
+                        {getPaymentMethodBadge(order.payment_method)}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {format(new Date(order.created_at), 'dd MMM yyyy', { locale: id })}
+                        {format(new Date(order.created_at), 'dd MMM yyyy HH:mm', { locale: id })}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {order.paid_at 
+                          ? format(new Date(order.paid_at), 'dd MMM yyyy HH:mm', { locale: id })
+                          : '-'
+                        }
                       </TableCell>
                       <TableCell>{getStatusBadge(order.payment_status)}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2 justify-end">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openImageDialog(order)}
-                            title="Lihat bukti transfer"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {order.payment_status === 'pending' && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => openVerifyDialog(order, 'approve')}
-                                title="Terima pembayaran"
-                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => openVerifyDialog(order, 'reject')}
-                                title="Tolak pembayaran"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
                     </TableRow>
                   ))
                 )}
               </TableBody>
             </Table>
           </div>
+
+          <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+            <div className="flex items-start gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium">Pembayaran Otomatis via Midtrans</p>
+                <p className="text-muted-foreground">
+                  Semua pembayaran diproses secara otomatis melalui Midtrans. Status akan diperbarui secara real-time 
+                  ketika customer menyelesaikan pembayaran. Invoice akan dikirim otomatis ke email customer setelah pembayaran berhasil.
+                </p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
-
-      {/* Image Preview Dialog */}
-      <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Bukti Pembayaran</DialogTitle>
-            <DialogDescription>
-              Order: {selectedOrder?.order_number}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedOrder?.payment_proof_url && (
-            <div className="max-h-[70vh] overflow-auto">
-              <img
-                src={selectedOrder.payment_proof_url}
-                alt="Bukti pembayaran"
-                className="w-full h-auto rounded-lg"
-              />
-            </div>
-          )}
-          <DialogFooter>
-            {selectedOrder?.payment_status === 'pending' && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setImageDialogOpen(false);
-                    openVerifyDialog(selectedOrder, 'reject');
-                  }}
-                >
-                  <XCircle className="mr-2 h-4 w-4" />
-                  Tolak
-                </Button>
-                <Button
-                  onClick={() => {
-                    setImageDialogOpen(false);
-                    openVerifyDialog(selectedOrder, 'approve');
-                  }}
-                >
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Terima
-                </Button>
-              </>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Verify Payment Dialog */}
-      <Dialog open={verifyDialogOpen} onOpenChange={setVerifyDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {verifyAction === 'approve' ? 'Terima Pembayaran' : 'Tolak Pembayaran'}
-            </DialogTitle>
-            <DialogDescription>
-              Order: {selectedOrder?.order_number}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="p-4 bg-secondary rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Total Pembayaran</p>
-              <p className="text-2xl font-bold">
-                Rp {selectedOrder?.total_amount.toLocaleString('id-ID')}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Catatan Admin {verifyAction === 'reject' && '(Wajib)'}
-              </label>
-              <Textarea
-                placeholder={
-                  verifyAction === 'approve'
-                    ? 'Tambahkan catatan jika diperlukan...'
-                    : 'Berikan alasan penolakan...'
-                }
-                value={adminNotes}
-                onChange={(e) => setAdminNotes(e.target.value)}
-                rows={3}
-              />
-            </div>
-
-            {verifyAction === 'approve' ? (
-              <div className="flex items-start gap-2 p-3 bg-green-50 dark:bg-green-950 rounded-lg text-sm">
-                <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <div className="text-green-800 dark:text-green-200">
-                  <p className="font-medium">Pembayaran akan diterima</p>
-                  <p>Order akan diubah ke status "Diproses"</p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-950 rounded-lg text-sm">
-                <XCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-                <div className="text-red-800 dark:text-red-200">
-                  <p className="font-medium">Pembayaran akan ditolak</p>
-                  <p>Bukti pembayaran akan dihapus dan customer perlu upload ulang</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setVerifyDialogOpen(false)}
-              disabled={processing}
-            >
-              Batal
-            </Button>
-            <Button
-              onClick={handleVerifyPayment}
-              disabled={processing || (verifyAction === 'reject' && !adminNotes.trim())}
-              variant={verifyAction === 'approve' ? 'default' : 'destructive'}
-            >
-              {processing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {verifyAction === 'approve' ? 'Terima Pembayaran' : 'Tolak Pembayaran'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    </div>
   );
 }
