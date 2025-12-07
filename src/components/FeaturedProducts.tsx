@@ -1,71 +1,85 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { ProductCard } from "./ProductCard";
-import freshwaterImg from "@/assets/category-freshwater.jpg";
-import saltwaterImg from "@/assets/category-saltwater.jpg";
-import plantsImg from "@/assets/category-plants.jpg";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
+import { Button } from "./ui/button";
+
+interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  discount_percentage: number | null;
+  stock_quantity: number | null;
+  rating_average: number | null;
+  review_count: number | null;
+  categories: { name: string } | null;
+  product_images: { image_url: string; is_primary: boolean }[];
+}
 
 export const FeaturedProducts = () => {
-  const products = [
-    {
-      name: "Ikan Cupang Halfmoon Super Red",
-      price: 75000,
-      originalPrice: 100000,
-      image: freshwaterImg,
-      rating: 4.8,
-      reviews: 124,
-      category: "Air Tawar",
-      inStock: true,
-      isNew: true,
-      discount: 25,
-    },
-    {
-      name: "Clownfish Premium (Ikan Nemo)",
-      price: 150000,
-      image: saltwaterImg,
-      rating: 4.9,
-      reviews: 89,
-      category: "Air Laut",
-      inStock: true,
-      isNew: true,
-    },
-    {
-      name: "Paket Tanaman Aquascape Pemula",
-      price: 85000,
-      originalPrice: 120000,
-      image: plantsImg,
-      rating: 4.7,
-      reviews: 156,
-      category: "Tanaman",
-      inStock: true,
-      discount: 29,
-    },
-    {
-      name: "Guppy Mixed Color (5 Ekor)",
-      price: 50000,
-      image: freshwaterImg,
-      rating: 4.6,
-      reviews: 203,
-      category: "Air Tawar",
-      inStock: true,
-    },
-    {
-      name: "Yellow Tang Juvenile",
-      price: 350000,
-      image: saltwaterImg,
-      rating: 4.9,
-      reviews: 45,
-      category: "Air Laut",
-      inStock: false,
-    },
-    {
-      name: "Java Moss Premium Grade",
-      price: 35000,
-      image: plantsImg,
-      rating: 4.8,
-      reviews: 178,
-      category: "Tanaman",
-      inStock: true,
-    },
-  ];
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadFeaturedProducts();
+  }, []);
+
+  const loadFeaturedProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          id,
+          name,
+          slug,
+          price,
+          discount_percentage,
+          stock_quantity,
+          rating_average,
+          review_count,
+          categories:category_id (name),
+          product_images (image_url, is_primary)
+        `)
+        .eq('is_active', true)
+        .order('view_count', { ascending: false })
+        .limit(6);
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error loading featured products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getProductImage = (product: Product) => {
+    const primaryImage = product.product_images.find(img => img.is_primary);
+    return primaryImage?.image_url || product.product_images[0]?.image_url || '/placeholder.svg';
+  };
+
+  const getOriginalPrice = (price: number, discount: number | null) => {
+    if (!discount) return undefined;
+    return Math.round(price / (1 - discount / 100));
+  };
+
+  if (loading) {
+    return (
+      <section className="py-16">
+        <div className="container">
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (products.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-16">
@@ -80,15 +94,30 @@ export const FeaturedProducts = () => {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product, index) => (
-            <ProductCard key={index} {...product} />
+          {products.map((product) => (
+            <ProductCard
+              key={product.id}
+              id={product.id}
+              name={product.name}
+              slug={product.slug}
+              price={product.price}
+              originalPrice={getOriginalPrice(product.price, product.discount_percentage)}
+              image={getProductImage(product)}
+              rating={product.rating_average || 0}
+              reviews={product.review_count || 0}
+              category={product.categories?.name || 'Uncategorized'}
+              inStock={(product.stock_quantity ?? 0) > 0}
+              discount={product.discount_percentage || undefined}
+            />
           ))}
         </div>
 
         <div className="text-center mt-12">
-          <button className="px-8 py-3 rounded-lg border-2 border-primary text-primary font-semibold hover:bg-primary hover:text-primary-foreground transition-colors">
-            Lihat Semua Produk
-          </button>
+          <Button variant="outline" size="lg" asChild>
+            <Link to="/products">
+              Lihat Semua Produk
+            </Link>
+          </Button>
         </div>
       </div>
     </section>
