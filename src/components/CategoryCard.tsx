@@ -11,7 +11,7 @@ interface CategoryCardProps {
 }
 
 export const CategoryCard = ({ title, description, image, count, slug }: CategoryCardProps) => {
-  const categoryLink = slug ? `/products?waterType=${slug}` : '/products';
+  const categoryLink = slug ? `/products?category=${slug}` : '/products';
   
   return (
     <Link to={categoryLink} className="block">
