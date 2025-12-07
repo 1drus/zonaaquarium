@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
 import { OrderTimeline } from '@/components/orders/OrderTimeline';
-import { PaymentProofUpload } from '@/components/orders/PaymentProofUpload';
+
 import { ReviewDialog } from '@/components/orders/ReviewDialog';
 import { CancellationRequest } from '@/components/orders/CancellationRequest';
 import { InvoicePrintView } from '@/components/orders/InvoicePrintView';
@@ -233,14 +233,32 @@ export default function OrderDetail() {
                 </Card>
               )}
 
-              {/* Payment Proof Upload */}
+              {/* Payment Pending Notice */}
               {order.status === 'menunggu_pembayaran' && order.payment_status === 'pending' && (
-                <PaymentProofUpload
-                  orderId={order.id}
-                  currentProofUrl={order.payment_proof_url}
-                  paymentDeadline={order.payment_deadline}
-                  onUploadSuccess={loadOrder}
-                />
+                <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+                      <CreditCard className="h-5 w-5" />
+                      Menunggu Pembayaran
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      Silakan selesaikan pembayaran melalui Midtrans. Status akan diperbarui otomatis setelah pembayaran berhasil.
+                    </p>
+                    {order.payment_deadline && (
+                      <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
+                        Batas waktu pembayaran:{' '}
+                        <strong>
+                          {new Date(order.payment_deadline).toLocaleString('id-ID', {
+                            dateStyle: 'long',
+                            timeStyle: 'short',
+                          })}
+                        </strong>
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
               )}
 
               {/* Admin Notes - Payment Rejected */}
