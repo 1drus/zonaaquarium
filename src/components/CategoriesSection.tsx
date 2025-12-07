@@ -1,32 +1,76 @@
+import { useEffect, useState } from "react";
 import { CategoryCard } from "./CategoryCard";
-import freshwaterImg from "@/assets/category-freshwater.jpg";
-import saltwaterImg from "@/assets/category-saltwater.jpg";
-import plantsImg from "@/assets/category-plants.jpg";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  icon: string | null;
+  product_count: number;
+}
 
 export const CategoriesSection = () => {
-  const categories = [
-    {
-      title: "Ikan Air Tawar",
-      description: "Koleksi ikan hias air tawar dari berbagai jenis dan ukuran",
-      image: freshwaterImg,
-      count: 156,
-      slug: "tawar",
-    },
-    {
-      title: "Ikan Air Laut",
-      description: "Ikan laut eksotis untuk akuarium air asin Anda",
-      image: saltwaterImg,
-      count: 89,
-      slug: "laut",
-    },
-    {
-      title: "Tanaman Aquascape",
-      description: "Tanaman air untuk mempercantik akuarium Anda",
-      image: plantsImg,
-      count: 67,
-      slug: "tanaman",
-    },
-  ];
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      // Fetch categories
+      const { data: categoriesData, error: catError } = await supabase
+        .from('categories')
+        .select('id, name, slug, description, icon')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
+        .limit(6);
+
+      if (catError) throw catError;
+
+      // Fetch product counts for each category
+      const categoriesWithCounts = await Promise.all(
+        (categoriesData || []).map(async (cat) => {
+          const { count } = await supabase
+            .from('products')
+            .select('*', { count: 'exact', head: true })
+            .eq('category_id', cat.id)
+            .eq('is_active', true);
+
+          return {
+            ...cat,
+            product_count: count || 0,
+          };
+        })
+      );
+
+      setCategories(categoriesWithCounts);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <section className="py-16 bg-gradient-light">
+        <div className="container">
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (categories.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-16 bg-gradient-light">
@@ -42,7 +86,14 @@ export const CategoriesSection = () => {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories.map((category) => (
-            <CategoryCard key={category.title} {...category} />
+            <CategoryCard
+              key={category.id}
+              title={category.name}
+              description={category.description || `Koleksi ${category.name} berkualitas`}
+              image={category.icon || '/placeholder.svg'}
+              count={category.product_count}
+              slug={category.slug}
+            />
           ))}
         </div>
       </div>
