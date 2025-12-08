@@ -150,14 +150,25 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (authError) {
       console.error("Auth error:", authError);
-      // Check if user already exists
-      if (authError.message.includes('already registered')) {
+      // Check if user already exists - handle both message and error code
+      if (authError.message?.includes('already registered') || 
+          (authError as any).code === 'email_exists' ||
+          authError.message?.includes('email_exists')) {
+        // Mark the verification code as used to prevent retry abuse
+        await supabase
+          .from('email_verification_codes')
+          .update({ verified: true })
+          .eq('id', verificationData.id);
+          
         return new Response(
-          JSON.stringify({ error: "Email sudah terdaftar. Silakan gunakan email lain atau login." }),
+          JSON.stringify({ error: "Email sudah terdaftar. Silakan login dengan email tersebut." }),
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
-      throw authError;
+      return new Response(
+        JSON.stringify({ error: authError.message || "Gagal membuat akun" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
     
     console.log("User created successfully:", authData.user?.id);
