@@ -16,20 +16,25 @@ import {
   Home,
   Eye,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  PartyPopper,
+  Truck
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import confetti from 'canvas-confetti';
 
 interface OrderData {
   id: string;
   order_number: string;
   total_amount: number;
-  payment_method: string;
+  payment_method: string | null;
   payment_deadline: string;
+  payment_status: string;
   status: string;
   created_at: string;
+  paid_at: string | null;
 }
 
 export default function OrderSuccess() {
@@ -37,10 +42,60 @@ export default function OrderSuccess() {
   const navigate = useNavigate();
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [confettiShown, setConfettiShown] = useState(false);
 
   useEffect(() => {
     loadOrder();
   }, [orderId]);
+
+  // Subscribe to realtime updates for this order
+  useEffect(() => {
+    if (!orderId) return;
+
+    const channel = supabase
+      .channel(`order-${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`
+        },
+        (payload) => {
+          console.log('Order updated via realtime:', payload);
+          const newOrder = payload.new as OrderData;
+          setOrder(newOrder);
+          
+          // Show confetti and toast when payment is successful
+          if (newOrder.payment_status === 'paid' && !confettiShown) {
+            triggerSuccessAnimation();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orderId, confettiShown]);
+
+  // Trigger confetti when payment is already paid on load
+  useEffect(() => {
+    if (order?.payment_status === 'paid' && !confettiShown) {
+      triggerSuccessAnimation();
+    }
+  }, [order?.payment_status]);
+
+  const triggerSuccessAnimation = () => {
+    setConfettiShown(true);
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+    toast.success('Pembayaran berhasil dikonfirmasi!');
+  };
 
   const loadOrder = async () => {
     if (!orderId) {
@@ -51,7 +106,7 @@ export default function OrderSuccess() {
     try {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_number, total_amount, payment_method, payment_deadline, status, created_at')
+        .select('id, order_number, total_amount, payment_method, payment_deadline, payment_status, status, created_at, paid_at')
         .eq('id', orderId)
         .single();
 
@@ -73,6 +128,8 @@ export default function OrderSuccess() {
     }
   };
 
+  const isPaid = order?.payment_status === 'paid';
+
   const getPaymentInstructions = () => {
     if (!order) return null;
 
@@ -82,7 +139,7 @@ export default function OrderSuccess() {
       'BNI': { name: 'BNI', account: '5678901234', accountName: 'Zaifara Aquatic' },
     };
 
-    const selectedBank = bankAccounts[order.payment_method];
+    const selectedBank = order.payment_method ? bankAccounts[order.payment_method] : null;
 
     return (
       <div className="space-y-4">
@@ -167,6 +224,141 @@ export default function OrderSuccess() {
     );
   };
 
+  const renderPaidSuccess = () => {
+    if (!order) return null;
+
+    return (
+      <>
+        {/* Success Header - Paid */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full mb-4 animate-bounce">
+            <PartyPopper className="h-10 w-10 text-green-600 dark:text-green-400" />
+          </div>
+          <h1 className="text-3xl font-bold mb-2 text-green-600 dark:text-green-400">
+            Pembayaran Berhasil!
+          </h1>
+          <p className="text-muted-foreground">
+            Terima kasih! Pesanan Anda sedang diproses dan akan segera dikirim.
+          </p>
+        </div>
+
+        {/* Order Number Card */}
+        <Card className="mb-6 border-green-200 dark:border-green-800">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Package className="h-5 w-5 text-green-600" />
+              Pesanan #{order.order_number}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
+                <p className="text-sm text-muted-foreground mb-1">Status Pembayaran</p>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <span className="font-semibold text-green-600">Lunas</span>
+                </div>
+              </div>
+              <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                <p className="text-sm text-muted-foreground mb-1">Status Pesanan</p>
+                <div className="flex items-center gap-2">
+                  <Truck className="h-5 w-5 text-blue-600" />
+                  <span className="font-semibold text-blue-600">Diproses</span>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Metode Pembayaran</span>
+                <span className="font-medium">{order.payment_method || 'Midtrans'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Waktu Pembayaran</span>
+                <span className="font-medium">
+                  {order.paid_at 
+                    ? format(new Date(order.paid_at), 'dd MMM yyyy, HH:mm', { locale: id })
+                    : '-'
+                  }
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total Pembayaran</span>
+                <span className="font-bold text-lg text-primary">
+                  Rp {order.total_amount.toLocaleString('id-ID')}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Next Steps */}
+        <Alert className="mb-6 border-blue-200 bg-blue-50 dark:bg-blue-950">
+          <Truck className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800 dark:text-blue-200">
+            <span className="font-medium">Langkah Selanjutnya: </span>
+            Pesanan Anda akan dikemas dan dikirim. Anda akan menerima notifikasi ketika pesanan sudah dikirim.
+          </AlertDescription>
+        </Alert>
+      </>
+    );
+  };
+
+  const renderPendingPayment = () => {
+    if (!order) return null;
+
+    return (
+      <>
+        {/* Success Header - Pending */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 dark:bg-orange-900 rounded-full mb-4">
+            <Clock className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+          </div>
+          <h1 className="text-3xl font-bold mb-2">Menunggu Pembayaran</h1>
+          <p className="text-muted-foreground">
+            Pesanan berhasil dibuat. Silakan selesaikan pembayaran untuk melanjutkan.
+          </p>
+        </div>
+
+        {/* Order Number Card */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Nomor Pesanan
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Order Number</p>
+                <p className="font-mono font-bold text-2xl">{order.order_number}</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={copyOrderNumber}>
+                <Copy className="h-4 w-4 mr-2" />
+                Salin
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Payment Deadline Alert */}
+        <Alert className="mb-6 border-orange-200 bg-orange-50 dark:bg-orange-950">
+          <Clock className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-800 dark:text-orange-200">
+            <span className="font-medium">Batas Pembayaran: </span>
+            {format(new Date(order.payment_deadline), 'dd MMMM yyyy, HH:mm', { locale: id })} WIB
+          </AlertDescription>
+        </Alert>
+
+        {/* Payment Instructions */}
+        {getPaymentInstructions()}
+      </>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -188,50 +380,7 @@ export default function OrderSuccess() {
       <Header />
       <main className="flex-1 bg-background py-8">
         <div className="container max-w-3xl">
-          {/* Success Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full mb-4">
-              <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
-            </div>
-            <h1 className="text-3xl font-bold mb-2">Pesanan Berhasil Dibuat!</h1>
-            <p className="text-muted-foreground">
-              Terima kasih atas pesanan Anda. Silakan lakukan pembayaran untuk melanjutkan.
-            </p>
-          </div>
-
-          {/* Order Number Card */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Nomor Pesanan
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Order Number</p>
-                  <p className="font-mono font-bold text-2xl">{order.order_number}</p>
-                </div>
-                <Button variant="outline" size="sm" onClick={copyOrderNumber}>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Salin
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Payment Deadline Alert */}
-          <Alert className="mb-6 border-orange-200 bg-orange-50 dark:bg-orange-950">
-            <Clock className="h-4 w-4 text-orange-600" />
-            <AlertDescription className="text-orange-800 dark:text-orange-200">
-              <span className="font-medium">Batas Pembayaran: </span>
-              {format(new Date(order.payment_deadline), 'dd MMMM yyyy, HH:mm', { locale: id })} WIB
-            </AlertDescription>
-          </Alert>
-
-          {/* Payment Instructions */}
-          {getPaymentInstructions()}
+          {isPaid ? renderPaidSuccess() : renderPendingPayment()}
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 mt-8">
@@ -258,8 +407,10 @@ export default function OrderSuccess() {
           <Card className="mt-6">
             <CardContent className="pt-6">
               <p className="text-sm text-muted-foreground text-center">
-                Jika ada pertanyaan, hubungi customer service kami melalui WhatsApp atau email.
-                Pesanan Anda akan diproses setelah pembayaran dikonfirmasi.
+                {isPaid 
+                  ? 'Pesanan Anda sedang diproses. Kami akan mengirimkan email konfirmasi dengan detail pengiriman.'
+                  : 'Jika ada pertanyaan, hubungi customer service kami melalui WhatsApp atau email. Pesanan Anda akan diproses setelah pembayaran dikonfirmasi.'
+                }
               </p>
             </CardContent>
           </Card>
