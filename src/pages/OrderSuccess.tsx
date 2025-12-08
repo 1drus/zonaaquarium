@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState, useCallback } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -18,7 +18,8 @@ import {
   Loader2,
   AlertCircle,
   PartyPopper,
-  Truck
+  Truck,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -39,14 +40,65 @@ interface OrderData {
 
 export default function OrderSuccess() {
   const { orderId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [checkingPayment, setCheckingPayment] = useState(false);
   const [confettiShown, setConfettiShown] = useState(false);
+
+  // Check payment status with Midtrans API
+  const checkPaymentStatus = useCallback(async () => {
+    if (!orderId || checkingPayment) return;
+    
+    setCheckingPayment(true);
+    try {
+      console.log('Checking payment status for order:', orderId);
+      
+      const { data, error } = await supabase.functions.invoke('check-payment-status', {
+        body: { orderId }
+      });
+
+      if (error) throw error;
+
+      console.log('Payment status check result:', data);
+
+      if (data.payment_status === 'paid') {
+        // Reload order to get updated data
+        await loadOrder();
+        if (!confettiShown) {
+          triggerSuccessAnimation();
+        }
+      } else if (data.payment_status === 'failed' || data.payment_status === 'expired') {
+        toast.error('Pembayaran gagal atau kadaluarsa');
+        await loadOrder();
+      }
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+    } finally {
+      setCheckingPayment(false);
+    }
+  }, [orderId, checkingPayment, confettiShown]);
 
   useEffect(() => {
     loadOrder();
   }, [orderId]);
+
+  // Auto-check payment status when returning from Midtrans
+  useEffect(() => {
+    const transactionStatus = searchParams.get('transaction_status');
+    const statusCode = searchParams.get('status_code');
+    
+    // If we have Midtrans callback params, check payment status
+    if (transactionStatus || statusCode) {
+      console.log('Detected Midtrans callback, checking payment status...');
+      // Small delay to allow Midtrans webhook to process first
+      const timer = setTimeout(() => {
+        checkPaymentStatus();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, checkPaymentStatus]);
 
   // Subscribe to realtime updates for this order
   useEffect(() => {
@@ -352,6 +404,28 @@ export default function OrderSuccess() {
             {format(new Date(order.payment_deadline), 'dd MMMM yyyy, HH:mm', { locale: id })} WIB
           </AlertDescription>
         </Alert>
+
+        {/* Check Payment Button */}
+        {order.payment_method === 'midtrans' && (
+          <Button 
+            variant="outline" 
+            className="w-full mb-6"
+            onClick={checkPaymentStatus}
+            disabled={checkingPayment}
+          >
+            {checkingPayment ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Memeriksa Status...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Cek Status Pembayaran
+              </>
+            )}
+          </Button>
+        )}
 
         {/* Payment Instructions */}
         {getPaymentInstructions()}
