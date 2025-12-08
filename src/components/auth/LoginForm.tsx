@@ -9,7 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 
-export function LoginForm() {
+interface LoginFormProps {
+  onForgotPassword?: () => void;
+}
+
+export function LoginForm({ onForgotPassword }: LoginFormProps) {
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -45,7 +49,19 @@ export function LoginForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Password</Label>
+          {onForgotPassword && (
+            <Button 
+              type="button" 
+              variant="link" 
+              className="px-0 h-auto font-normal text-sm text-muted-foreground hover:text-primary"
+              onClick={onForgotPassword}
+            >
+              Lupa password?
+            </Button>
+          )}
+        </div>
         <Input
           id="password"
           type="password"
