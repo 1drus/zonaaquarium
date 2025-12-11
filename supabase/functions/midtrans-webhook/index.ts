@@ -14,6 +14,7 @@ const corsHeaders = {
 
 interface MidtransNotification {
   transaction_status: string;
+  status_code: string;
   order_id: string;
   gross_amount: string;
   payment_type: string;
@@ -59,14 +60,18 @@ const handler = async (req: Request): Promise<Response> => {
     const transactionStatus = notification.transaction_status;
     const paymentType = notification.payment_type;
 
-    // Verify signature
+    // Verify signature using Midtrans formula: SHA512(order_id + status_code + gross_amount + server_key)
     const crypto = await import("https://deno.land/std@0.177.0/crypto/mod.ts");
     const signatureKey = notification.signature_key;
+    const signatureString = `${orderId}${notification.status_code}${notification.gross_amount}${MIDTRANS_SERVER_KEY}`;
+    
+    console.log("Signature verification - order_id:", orderId);
+    console.log("Signature verification - status_code:", notification.status_code);
+    console.log("Signature verification - gross_amount:", notification.gross_amount);
+    
     const expectedSignature = await crypto.crypto.subtle.digest(
       "SHA-512",
-      new TextEncoder().encode(
-        `${orderId}${notification.transaction_status}${notification.gross_amount}${MIDTRANS_SERVER_KEY}`
-      )
+      new TextEncoder().encode(signatureString)
     );
     const expectedSignatureHex = Array.from(new Uint8Array(expectedSignature))
       .map(b => b.toString(16).padStart(2, "0"))
