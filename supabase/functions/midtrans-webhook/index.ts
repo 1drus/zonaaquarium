@@ -85,6 +85,15 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Handle test notifications from Midtrans dashboard
+    if (orderId.startsWith("payment_notif_test_")) {
+      console.log("Test notification received - returning success without database update");
+      return new Response(
+        JSON.stringify({ success: true, message: "Test notification acknowledged" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     let orderStatus = "menunggu_pembayaran";
     let paymentStatus = "pending";
     const isPaid = transactionStatus === "capture" || transactionStatus === "settlement";
