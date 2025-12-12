@@ -144,6 +144,48 @@ export function OrderManagement() {
     setLoading(false);
   };
 
+  // Get available status options based on current order status and payment status
+  const getAvailableStatusOptions = (currentStatus: string, paymentStatus: string) => {
+    const allStatuses = [
+      { value: 'menunggu_pembayaran', label: 'Menunggu Pembayaran' },
+      { value: 'diproses', label: 'Diproses' },
+      { value: 'dikirim', label: 'Dikirim' },
+      { value: 'selesai', label: 'Selesai' },
+      { value: 'dibatalkan', label: 'Dibatalkan' },
+    ];
+
+    // If payment is not paid yet, restrict options
+    if (paymentStatus !== 'paid') {
+      // Can only go to diproses (which will mark as paid) or dibatalkan
+      return allStatuses.filter(s => 
+        s.value === currentStatus || 
+        s.value === 'diproses' || 
+        s.value === 'dibatalkan'
+      );
+    }
+
+    // If already paid, show all logical progressions
+    switch (currentStatus) {
+      case 'diproses':
+        return allStatuses.filter(s => 
+          s.value === 'diproses' || 
+          s.value === 'dikirim' || 
+          s.value === 'dibatalkan'
+        );
+      case 'dikirim':
+        return allStatuses.filter(s => 
+          s.value === 'dikirim' || 
+          s.value === 'selesai'
+        );
+      case 'selesai':
+      case 'dibatalkan':
+        // Final states - no changes allowed
+        return allStatuses.filter(s => s.value === currentStatus);
+      default:
+        return allStatuses;
+    }
+  };
+
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     const updateData: any = { status: newStatus };
 
@@ -262,16 +304,17 @@ export function OrderManagement() {
                       <Select
                         value={order.status}
                         onValueChange={(value) => handleUpdateStatus(order.id, value)}
+                        disabled={order.status === 'selesai' || order.status === 'dibatalkan'}
                       >
                         <SelectTrigger className="w-[160px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="menunggu_pembayaran">Menunggu Pembayaran</SelectItem>
-                          <SelectItem value="diproses">Diproses</SelectItem>
-                          <SelectItem value="dikirim">Dikirim</SelectItem>
-                          <SelectItem value="selesai">Selesai</SelectItem>
-                          <SelectItem value="dibatalkan">Dibatalkan</SelectItem>
+                          {getAvailableStatusOptions(order.status, order.payment_status).map((status) => (
+                            <SelectItem key={status.value} value={status.value}>
+                              {status.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </TableCell>
