@@ -59,7 +59,7 @@ interface OrderDetail {
 
 export default function OrderDetail() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -127,20 +127,27 @@ export default function OrderDetail() {
   const loadOrder = async () => {
     if (!user || !id) return;
 
-    const { data, error } = await supabase
+    // Build query - admin can view any order, regular users only their own
+    let query = supabase
       .from('orders')
       .select(`
         *,
         order_items (*)
       `)
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .single();
+      .eq('id', id);
+
+    // Only add user_id filter for non-admin users
+    if (!isAdmin) {
+      query = query.eq('user_id', user.id);
+    }
+
+    const { data, error } = await query.single();
 
     if (!error && data) {
       setOrder(data as OrderDetail);
     } else {
-      navigate('/orders');
+      // Redirect admin back to admin dashboard, regular users to orders page
+      navigate(isAdmin ? '/admin' : '/orders');
     }
     setLoading(false);
   };
