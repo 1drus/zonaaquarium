@@ -250,7 +250,7 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         sender: {
           name: "Zona Aquarium",
-          email: "arilakbar41@gmail.com", // Gunakan email yang sudah terverifikasi di Brevo
+          email: "noreply@zonaaquarium.store",
         },
         to: [
           {
