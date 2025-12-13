@@ -19,9 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, Eye } from 'lucide-react';
+import { Search, Eye, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { InvoicePrintView } from '@/components/orders/InvoicePrintView';
 
 interface Order {
   id: string;
@@ -37,14 +37,46 @@ interface Order {
   };
 }
 
+interface FullOrderData {
+  id: string;
+  order_number: string;
+  status: string;
+  payment_status: string;
+  payment_method: string;
+  recipient_name: string;
+  recipient_phone: string;
+  shipping_address: string;
+  shipping_method: string;
+  shipping_cost: number;
+  subtotal: number;
+  discount_amount: number | null;
+  total_amount: number;
+  notes: string | null;
+  created_at: string;
+  paid_at: string | null;
+  order_items: {
+    id: string;
+    product_name: string;
+    product_image_url: string | null;
+    variant_name: string | null;
+    variant_sku: string | null;
+    price: number;
+    discount_percentage: number | null;
+    quantity: number;
+    subtotal: number;
+  }[];
+}
+
 export function OrderManagement() {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<FullOrderData | null>(null);
+  const [loadingInvoice, setLoadingInvoice] = useState<string | null>(null);
 
   useEffect(() => {
     loadOrders();
@@ -247,6 +279,65 @@ export function OrderManagement() {
     }
   };
 
+  const handleViewInvoice = async (orderId: string) => {
+    setLoadingInvoice(orderId);
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          order_number,
+          status,
+          payment_status,
+          payment_method,
+          recipient_name,
+          recipient_phone,
+          shipping_address,
+          shipping_method,
+          shipping_cost,
+          subtotal,
+          discount_amount,
+          total_amount,
+          notes,
+          created_at,
+          paid_at,
+          order_items (
+            id,
+            product_name,
+            product_image_url,
+            variant_name,
+            variant_sku,
+            price,
+            discount_percentage,
+            quantity,
+            subtotal
+          )
+        `)
+        .eq('id', orderId)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) {
+        toast({
+          variant: 'destructive',
+          title: 'Pesanan tidak ditemukan',
+        });
+        return;
+      }
+
+      setSelectedOrder(data as FullOrderData);
+      setShowInvoice(true);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Gagal memuat invoice',
+        description: error.message,
+      });
+    } finally {
+      setLoadingInvoice(null);
+    }
+  };
+
   if (loading) {
     return <p className="text-muted-foreground">Memuat pesanan...</p>;
   }
@@ -364,9 +455,14 @@ export function OrderManagement() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/orders/${order.id}`)}
+                        onClick={() => handleViewInvoice(order.id)}
+                        disabled={loadingInvoice === order.id}
                       >
-                        <Eye className="h-4 w-4" />
+                        {loadingInvoice === order.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -376,6 +472,17 @@ export function OrderManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Invoice Popup */}
+      {showInvoice && selectedOrder && (
+        <InvoicePrintView
+          order={selectedOrder}
+          onClose={() => {
+            setShowInvoice(false);
+            setSelectedOrder(null);
+          }}
+        />
+      )}
     </div>
   );
 }
