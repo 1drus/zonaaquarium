@@ -5,12 +5,66 @@ const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Use service role key as HMAC secret for internal function-to-function calls
+const INTERNAL_SECRET = SUPABASE_SERVICE_ROLE_KEY;
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-signature",
 };
+
+// Generate HMAC-SHA256 signature for verification
+async function verifyInternalSignature(orderId: string, signature: string): Promise<boolean> {
+  try {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(INTERNAL_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    
+    const expectedSignature = await crypto.subtle.sign(
+      "HMAC",
+      key,
+      encoder.encode(orderId)
+    );
+    
+    const expectedHex = Array.from(new Uint8Array(expectedSignature))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    return signature === expectedHex;
+  } catch (error) {
+    console.error("Signature verification error:", error);
+    return false;
+  }
+}
+
+// Helper to generate signature (for use by calling functions)
+async function generateSignature(orderId: string, secret: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(orderId)
+  );
+  
+  return Array.from(new Uint8Array(signature))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
 
 interface OrderItem {
   product_name: string;
@@ -200,13 +254,37 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Verify internal signature - this function should only be called by other edge functions
+    const internalSignature = req.headers.get("x-internal-signature");
+    
     const { orderId } = await req.json();
 
     if (!orderId) {
-      throw new Error("Order ID is required");
+      return new Response(
+        JSON.stringify({ error: "Order ID is required" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
-    console.log("Sending invoice email for order:", orderId);
+    // Verify the request is from an internal source using HMAC signature
+    if (!internalSignature) {
+      console.error("Missing internal signature header");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - Internal access only" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const isValidSignature = await verifyInternalSignature(orderId, internalSignature);
+    if (!isValidSignature) {
+      console.error("Invalid internal signature");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - Invalid signature" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log("Verified internal call, sending invoice email for order:", orderId);
 
     // Fetch order data
     const { data: order, error: orderError } = await supabase
