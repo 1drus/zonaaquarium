@@ -4,8 +4,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const MIDTRANS_SERVER_KEY = Deno.env.get("MIDTRANS_SERVER_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +19,36 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Extract JWT token from Authorization header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.error("Missing or invalid Authorization header");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - Missing authentication token" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    
+    // Create a client with the user's token to verify identity
+    const supabaseUser = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    });
+
+    // Get the authenticated user
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    
+    if (userError || !user) {
+      console.error("Invalid token or user not found:", userError);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - Invalid authentication token" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log("Authenticated user:", user.id);
+
     const { orderId } = await req.json();
 
     if (!orderId) {
@@ -29,10 +60,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Checking payment status for order:", orderId);
 
-    // Get current order status
-    const { data: order, error: orderError } = await supabase
+    // Get current order status - using admin client
+    const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
-      .select("id, order_number, payment_status, status, payment_method")
+      .select("id, order_number, payment_status, status, payment_method, user_id")
       .eq("id", orderId)
       .single();
 
@@ -41,6 +72,20 @@ const handler = async (req: Request): Promise<Response> => {
       return new Response(
         JSON.stringify({ error: "Order not found" }),
         { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Verify the user owns this order (or is admin)
+    const { data: isAdmin } = await supabaseAdmin.rpc('has_role', { 
+      _user_id: user.id, 
+      _role: 'admin' 
+    });
+
+    if (order.user_id !== user.id && !isAdmin) {
+      console.error("User does not own this order:", { userId: user.id, orderUserId: order.user_id });
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - You do not have access to this order" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -123,7 +168,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (newPaymentStatus !== order.payment_status || newOrderStatus !== order.status) {
       console.log(`Updating order ${orderId}: ${newOrderStatus}, ${newPaymentStatus}`);
       
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseAdmin
         .from("orders")
         .update({
           status: newOrderStatus,
