@@ -21,7 +21,8 @@ import {
 } from '@/components/ui/table';
 import { Search, Eye, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { InvoicePrintView } from '@/components/orders/InvoicePrintView';
+import { OrderDetailDialog } from './OrderDetailDialog';
+
 
 interface Order {
   id: string;
@@ -473,16 +474,15 @@ export function OrderManagement() {
         </CardContent>
       </Card>
 
-      {/* Invoice Popup */}
-      {showInvoice && selectedOrder && (
-        <InvoicePrintView
-          order={selectedOrder}
-          onClose={() => {
-            setShowInvoice(false);
-            setSelectedOrder(null);
-          }}
-        />
-      )}
+      {/* Order Detail Dialog */}
+      <OrderDetailDialog
+        order={selectedOrder}
+        open={showInvoice}
+        onClose={() => {
+          setShowInvoice(false);
+          setSelectedOrder(null);
+        }}
+      />
     </div>
   );
 }
