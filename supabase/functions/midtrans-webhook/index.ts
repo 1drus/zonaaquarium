@@ -12,6 +12,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Generate HMAC-SHA256 signature for internal function calls
+async function generateInternalSignature(orderId: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(SUPABASE_SERVICE_ROLE_KEY),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(orderId)
+  );
+  
+  return Array.from(new Uint8Array(signature))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 interface MidtransNotification {
   transaction_status: string;
   status_code: string;
@@ -132,11 +154,12 @@ const handler = async (req: Request): Promise<Response> => {
     // Send invoice email if payment successful
     if (isPaid) {
       try {
+        const internalSignature = await generateInternalSignature(orderId);
         const invoiceResponse = await fetch(`${SUPABASE_URL}/functions/v1/send-invoice-email`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            "x-internal-signature": internalSignature,
           },
           body: JSON.stringify({ orderId }),
         });
