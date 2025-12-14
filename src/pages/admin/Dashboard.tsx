@@ -18,6 +18,7 @@ import { UserManagement } from '@/components/admin/UserManagement';
 import { LowStockAlerts } from '@/components/admin/LowStockAlerts';
 import { SystemSettings } from '@/components/admin/SystemSettings';
 import { TierConfigManagement } from '@/components/admin/TierConfigManagement';
+import { FlashSaleManagement } from '@/components/admin/FlashSaleManagement';
 import { Loader2, Shield } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -70,11 +71,12 @@ export default function AdminDashboard() {
 
           <Tabs defaultValue="stats" className="space-y-6">
             <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-              <TabsList className="inline-flex w-auto min-w-full md:grid md:w-full md:grid-cols-6 lg:grid-cols-12 gap-1">
+              <TabsList className="inline-flex w-auto min-w-full md:grid md:w-full md:grid-cols-7 lg:grid-cols-13 gap-1">
                 <TabsTrigger value="stats" className="whitespace-nowrap">Statistik</TabsTrigger>
                 <TabsTrigger value="analytics" className="whitespace-nowrap">Analytics</TabsTrigger>
                 <TabsTrigger value="products" className="whitespace-nowrap">Produk</TabsTrigger>
                 <TabsTrigger value="categories" className="whitespace-nowrap">Kategori</TabsTrigger>
+                <TabsTrigger value="flash-sale" className="whitespace-nowrap">Flash Sale</TabsTrigger>
                 <TabsTrigger value="orders" className="whitespace-nowrap">Pesanan</TabsTrigger>
                 <TabsTrigger value="payment" className="whitespace-nowrap">Pembayaran</TabsTrigger>
                 <TabsTrigger value="reviews" className="whitespace-nowrap">Reviews</TabsTrigger>
@@ -100,6 +102,10 @@ export default function AdminDashboard() {
 
             <TabsContent value="categories">
               <CategoryManagement />
+            </TabsContent>
+
+            <TabsContent value="flash-sale">
+              <FlashSaleManagement />
             </TabsContent>
 
             <TabsContent value="orders">

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Heart, Star, Loader2 } from "lucide-react";
+import { ShoppingCart, Heart, Star, Loader2, Zap } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 
 interface ProductCardProps {
@@ -19,6 +19,8 @@ interface ProductCardProps {
   inStock: boolean;
   isNew?: boolean;
   discount?: number;
+  isFlashSale?: boolean;
+  flashSaleStockLeft?: number;
 }
 
 export const ProductCard = ({
@@ -34,6 +36,8 @@ export const ProductCard = ({
   inStock,
   isNew,
   discount,
+  isFlashSale,
+  flashSaleStockLeft,
 }: ProductCardProps) => {
   const [adding, setAdding] = useState(false);
   const { addToCart } = useCart();
@@ -48,9 +52,11 @@ export const ProductCard = ({
   };
 
   const productUrl = slug ? `/products/${slug}` : '#';
+  const cardBorderClass = isFlashSale ? 'border-destructive/50 hover:border-destructive' : 'border-border/50 hover:border-primary/50';
+  
   return (
     <Link to={productUrl}>
-      <Card className="group overflow-hidden border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-medium">
+      <Card className={`group overflow-hidden ${cardBorderClass} transition-all duration-300 hover:shadow-medium`}>
         <div className="relative aspect-square overflow-hidden bg-muted/30">
           <img
             src={image}
@@ -60,10 +66,16 @@ export const ProductCard = ({
         
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-2">
-          {isNew && (
+          {isFlashSale && (
+            <Badge className="bg-destructive text-destructive-foreground animate-pulse">
+              <Zap className="h-3 w-3 mr-1" />
+              Flash Sale
+            </Badge>
+          )}
+          {isNew && !isFlashSale && (
             <Badge className="bg-secondary text-secondary-foreground">Baru</Badge>
           )}
-          {discount && (
+          {discount && !isFlashSale && (
             <Badge className="bg-accent text-accent-foreground">-{discount}%</Badge>
           )}
           {!inStock && (
