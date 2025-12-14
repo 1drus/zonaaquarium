@@ -196,6 +196,97 @@ export type Database = {
         }
         Relationships: []
       }
+      flash_sale_items: {
+        Row: {
+          created_at: string
+          flash_price: number
+          flash_sale_id: string
+          id: string
+          original_price: number
+          product_id: string
+          sold_count: number
+          stock_limit: number
+        }
+        Insert: {
+          created_at?: string
+          flash_price: number
+          flash_sale_id: string
+          id?: string
+          original_price: number
+          product_id: string
+          sold_count?: number
+          stock_limit?: number
+        }
+        Update: {
+          created_at?: string
+          flash_price?: number
+          flash_sale_id?: string
+          id?: string
+          original_price?: number
+          product_id?: string
+          sold_count?: number
+          stock_limit?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flash_sale_items_flash_sale_id_fkey"
+            columns: ["flash_sale_id"]
+            isOneToOne: false
+            referencedRelation: "active_flash_sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flash_sale_items_flash_sale_id_fkey"
+            columns: ["flash_sale_id"]
+            isOneToOne: false
+            referencedRelation: "flash_sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flash_sale_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flash_sales: {
+        Row: {
+          banner_image_url: string | null
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          is_active: boolean | null
+          name: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          banner_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          banner_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       member_progress: {
         Row: {
           created_at: string | null
@@ -1027,6 +1118,36 @@ export type Database = {
       }
     }
     Views: {
+      active_flash_sales: {
+        Row: {
+          banner_image_url: string | null
+          description: string | null
+          end_time: string | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          start_time: string | null
+        }
+        Insert: {
+          banner_image_url?: string | null
+          description?: string | null
+          end_time?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          start_time?: string | null
+        }
+        Update: {
+          banner_image_url?: string | null
+          description?: string | null
+          end_time?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          start_time?: string | null
+        }
+        Relationships: []
+      }
       public_reviews: {
         Row: {
           comment: string | null
@@ -1081,6 +1202,14 @@ export type Database = {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
+        }
+        Returns: boolean
+      }
+      increment_flash_sale_sold: {
+        Args: {
+          p_flash_sale_id: string
+          p_product_id: string
+          p_quantity: number
         }
         Returns: boolean
       }
