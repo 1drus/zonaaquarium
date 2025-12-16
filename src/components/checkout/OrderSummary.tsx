@@ -7,6 +7,7 @@ import { MapPin, Truck, CreditCard, Package, Gift } from 'lucide-react';
 
 interface CartItem {
   id: string;
+  product_id: string;
   quantity: number;
   variant_id: string | null;
   product_variants?: {
@@ -51,6 +52,7 @@ interface OrderSummaryProps {
   voucherDiscount?: number;
   voucherCode?: string;
   tierConfig?: TierConfig | null;
+  getFlashSalePrice?: (productId: string) => { isFlashSale: boolean; flashPrice?: number; originalPrice?: number; stockLeft?: number };
 }
 
 export function OrderSummary({
@@ -66,6 +68,7 @@ export function OrderSummary({
   voucherDiscount = 0,
   voucherCode,
   tierConfig,
+  getFlashSalePrice,
 }: OrderSummaryProps) {
   const shippingDiscount = originalShippingCost - shippingCost;
   const total = subtotal - voucherDiscount + shippingCost;
@@ -84,24 +87,50 @@ export function OrderSummary({
         </CardHeader>
         <CardContent className="space-y-4">
           {cartItems.map((item) => {
-            let price = item.products.price;
+            // Check for flash sale price
+            const flashSaleInfo = getFlashSalePrice?.(item.product_id);
+            const isFlashSale = flashSaleInfo?.isFlashSale && flashSaleInfo?.flashPrice;
             
-            // Add variant price adjustment if applicable
-            if (item.product_variants?.price_adjustment) {
-              price += item.product_variants.price_adjustment;
+            let finalPrice: number;
+            let originalPrice: number | null = null;
+            
+            if (isFlashSale) {
+              finalPrice = flashSaleInfo.flashPrice!;
+              originalPrice = flashSaleInfo.originalPrice || item.products.price;
+              // Add variant price adjustment if applicable
+              if (item.product_variants?.price_adjustment) {
+                finalPrice += item.product_variants.price_adjustment;
+                originalPrice += item.product_variants.price_adjustment;
+              }
+            } else {
+              let price = item.products.price;
+              // Add variant price adjustment if applicable
+              if (item.product_variants?.price_adjustment) {
+                price += item.product_variants.price_adjustment;
+              }
+              const discount = item.products.discount_percentage || 0;
+              finalPrice = price - (price * discount / 100);
+              if (discount > 0) {
+                originalPrice = price;
+              }
             }
             
-            const discount = item.products.discount_percentage || 0;
-            const finalPrice = price - (price * discount / 100);
             const primaryImage = item.products.product_images.find(img => img.is_primary)?.image_url;
 
             return (
               <div key={item.id} className="flex gap-4">
-                <img
-                  src={primaryImage || '/placeholder.svg'}
-                  alt={item.products.name}
-                  className="w-16 h-16 object-cover rounded"
-                />
+                <div className="relative">
+                  <img
+                    src={primaryImage || '/placeholder.svg'}
+                    alt={item.products.name}
+                    className="w-16 h-16 object-cover rounded"
+                  />
+                  {isFlashSale && (
+                    <span className="absolute -top-1 -right-1 text-[10px] bg-orange-500 text-white px-1 py-0.5 rounded font-semibold">
+                      ⚡
+                    </span>
+                  )}
+                </div>
                 <div className="flex-1">
                   <p className="font-medium">{item.products.name}</p>
                   {item.product_variants && (
@@ -109,9 +138,16 @@ export function OrderSummary({
                       Varian: {item.product_variants.variant_name}
                     </p>
                   )}
-                  <p className="text-sm text-muted-foreground">
-                    {item.quantity} x Rp {finalPrice.toLocaleString('id-ID')}
-                  </p>
+                  <div className="text-sm text-muted-foreground">
+                    {originalPrice && (
+                      <span className="line-through mr-2">
+                        Rp {originalPrice.toLocaleString('id-ID')}
+                      </span>
+                    )}
+                    <span className={isFlashSale ? 'text-orange-500 font-medium' : ''}>
+                      {item.quantity} x Rp {finalPrice.toLocaleString('id-ID')}
+                    </span>
+                  </div>
                 </div>
                 <p className="font-semibold">
                   Rp {(finalPrice * item.quantity).toLocaleString('id-ID')}
