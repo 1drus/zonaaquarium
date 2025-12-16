@@ -17,6 +17,8 @@ interface CartItemProps {
   variantName?: string;
   priceAdjustment?: number;
   variantStockQuantity?: number;
+  flashSalePrice?: number;
+  flashSaleOriginalPrice?: number;
   onUpdateQuantity: (id: string, quantity: number) => void;
   onRemove: (id: string) => void;
 }
@@ -34,14 +36,30 @@ export function CartItem({
   variantName,
   priceAdjustment = 0,
   variantStockQuantity,
+  flashSalePrice,
+  flashSaleOriginalPrice,
   onUpdateQuantity,
   onRemove,
 }: CartItemProps) {
-  const adjustedPrice = price + priceAdjustment;
-  const finalPrice = discountPercentage
-    ? adjustedPrice * (1 - discountPercentage / 100)
-    : adjustedPrice;
+  const isFlashSale = flashSalePrice !== undefined;
+  
+  let finalPrice: number;
+  let originalPrice: number;
+  
+  if (isFlashSale) {
+    // Flash sale price + variant adjustment
+    finalPrice = flashSalePrice + priceAdjustment;
+    originalPrice = (flashSaleOriginalPrice || price) + priceAdjustment;
+  } else {
+    const adjustedPrice = price + priceAdjustment;
+    finalPrice = discountPercentage
+      ? adjustedPrice * (1 - discountPercentage / 100)
+      : adjustedPrice;
+    originalPrice = adjustedPrice;
+  }
+  
   const subtotal = finalPrice * quantity;
+  const hasDiscount = isFlashSale || (discountPercentage && discountPercentage > 0);
 
   // Determine actual stock (variant stock takes priority)
   const actualStock = variantStockQuantity !== undefined ? variantStockQuantity : stockQuantity;
@@ -95,14 +113,20 @@ export function CartItem({
             )}
 
             <div className="mt-2 space-y-1">
-              {discountPercentage && (
+              {hasDiscount && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground line-through">
-                    Rp {price.toLocaleString('id-ID')}
+                    Rp {originalPrice.toLocaleString('id-ID')}
                   </span>
-                  <span className="text-xs bg-destructive text-destructive-foreground px-2 py-0.5 rounded">
-                    -{discountPercentage}%
-                  </span>
+                  {isFlashSale ? (
+                    <span className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded font-semibold animate-pulse">
+                      ⚡ FLASH SALE
+                    </span>
+                  ) : discountPercentage ? (
+                    <span className="text-xs bg-destructive text-destructive-foreground px-2 py-0.5 rounded">
+                      -{discountPercentage}%
+                    </span>
+                  ) : null}
                 </div>
               )}
               <div className={`text-lg font-bold ${isOutOfStock ? 'text-muted-foreground' : 'text-primary'}`}>
