@@ -71,21 +71,55 @@ export default function AdminDashboard() {
 
           <Tabs defaultValue="stats" className="space-y-6">
             <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-              <TabsList className="inline-flex w-auto min-w-full md:grid md:w-full md:grid-cols-7 lg:grid-cols-13 gap-1">
-                <TabsTrigger value="stats" className="whitespace-nowrap">Statistik</TabsTrigger>
-                <TabsTrigger value="analytics" className="whitespace-nowrap">Analytics</TabsTrigger>
-                <TabsTrigger value="products" className="whitespace-nowrap">Produk</TabsTrigger>
-                <TabsTrigger value="categories" className="whitespace-nowrap">Kategori</TabsTrigger>
-                <TabsTrigger value="flash-sale" className="whitespace-nowrap">Flash Sale</TabsTrigger>
-                <TabsTrigger value="orders" className="whitespace-nowrap">Pesanan</TabsTrigger>
-                <TabsTrigger value="payment" className="whitespace-nowrap">Pembayaran</TabsTrigger>
-                <TabsTrigger value="reviews" className="whitespace-nowrap">Reviews</TabsTrigger>
-                <TabsTrigger value="vouchers" className="whitespace-nowrap">Voucher</TabsTrigger>
-                <TabsTrigger value="tiers" className="whitespace-nowrap">Tier</TabsTrigger>
-                <TabsTrigger value="users" className="whitespace-nowrap">Users</TabsTrigger>
-                <TabsTrigger value="stock" className="whitespace-nowrap">Stok</TabsTrigger>
-                <TabsTrigger value="settings" className="whitespace-nowrap">Settings</TabsTrigger>
-              </TabsList>
+              <div className="flex flex-col gap-2 min-w-max md:min-w-0">
+                {/* Row 1: Overview & Analytics */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider min-w-[80px]">Overview</span>
+                  <TabsList className="h-9">
+                    <TabsTrigger value="stats" className="text-xs">Statistik</TabsTrigger>
+                    <TabsTrigger value="analytics" className="text-xs">Analytics</TabsTrigger>
+                  </TabsList>
+                </div>
+
+                {/* Row 2: Catalog Management */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider min-w-[80px]">Katalog</span>
+                  <TabsList className="h-9">
+                    <TabsTrigger value="products" className="text-xs">Produk</TabsTrigger>
+                    <TabsTrigger value="categories" className="text-xs">Kategori</TabsTrigger>
+                    <TabsTrigger value="stock" className="text-xs">Stok</TabsTrigger>
+                  </TabsList>
+                </div>
+
+                {/* Row 3: Sales & Orders */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider min-w-[80px]">Penjualan</span>
+                  <TabsList className="h-9">
+                    <TabsTrigger value="orders" className="text-xs">Pesanan</TabsTrigger>
+                    <TabsTrigger value="payment" className="text-xs">Pembayaran</TabsTrigger>
+                    <TabsTrigger value="flash-sale" className="text-xs">Flash Sale</TabsTrigger>
+                  </TabsList>
+                </div>
+
+                {/* Row 4: Marketing & Engagement */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider min-w-[80px]">Marketing</span>
+                  <TabsList className="h-9">
+                    <TabsTrigger value="vouchers" className="text-xs">Voucher</TabsTrigger>
+                    <TabsTrigger value="tiers" className="text-xs">Tier Member</TabsTrigger>
+                    <TabsTrigger value="reviews" className="text-xs">Reviews</TabsTrigger>
+                  </TabsList>
+                </div>
+
+                {/* Row 5: System */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider min-w-[80px]">Sistem</span>
+                  <TabsList className="h-9">
+                    <TabsTrigger value="users" className="text-xs">Users</TabsTrigger>
+                    <TabsTrigger value="settings" className="text-xs">Settings</TabsTrigger>
+                  </TabsList>
+                </div>
+              </div>
             </div>
 
             <TabsContent value="stats">
@@ -104,8 +138,8 @@ export default function AdminDashboard() {
               <CategoryManagement />
             </TabsContent>
 
-            <TabsContent value="flash-sale">
-              <FlashSaleManagement />
+            <TabsContent value="stock">
+              <LowStockAlerts />
             </TabsContent>
 
             <TabsContent value="orders">
@@ -116,8 +150,8 @@ export default function AdminDashboard() {
               <PaymentVerification />
             </TabsContent>
 
-            <TabsContent value="reviews">
-              <ReviewManagement />
+            <TabsContent value="flash-sale">
+              <FlashSaleManagement />
             </TabsContent>
 
             <TabsContent value="vouchers">
@@ -128,12 +162,12 @@ export default function AdminDashboard() {
               <TierConfigManagement />
             </TabsContent>
 
-            <TabsContent value="users">
-              <UserManagement />
+            <TabsContent value="reviews">
+              <ReviewManagement />
             </TabsContent>
 
-            <TabsContent value="stock">
-              <LowStockAlerts />
+            <TabsContent value="users">
+              <UserManagement />
             </TabsContent>
 
             <TabsContent value="settings">
