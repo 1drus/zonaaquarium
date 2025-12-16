@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useFlashSale } from '@/hooks/useFlashSale';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -42,6 +43,7 @@ const Cart = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { getFlashSalePrice } = useFlashSale();
 
   useEffect(() => {
     if (!user) {
@@ -143,16 +145,27 @@ const Cart = () => {
       // Skip items that are out of stock
       if (actualStock <= 0) return sum;
       
-      let price = item.product.price;
+      // Check for flash sale price
+      const flashSaleInfo = getFlashSalePrice(item.product.id);
       
-      // Add variant price adjustment if exists
-      if (item.product_variants) {
-        price += item.product_variants.price_adjustment;
-      }
-      
-      // Apply product discount
-      if (item.product.discount_percentage) {
-        price = price * (1 - item.product.discount_percentage / 100);
+      let price: number;
+      if (flashSaleInfo.isFlashSale && flashSaleInfo.flashPrice) {
+        // Use flash sale price (already includes discount)
+        price = flashSaleInfo.flashPrice;
+        // Add variant price adjustment if exists
+        if (item.product_variants) {
+          price += item.product_variants.price_adjustment;
+        }
+      } else {
+        price = item.product.price;
+        // Add variant price adjustment if exists
+        if (item.product_variants) {
+          price += item.product_variants.price_adjustment;
+        }
+        // Apply product discount
+        if (item.product.discount_percentage) {
+          price = price * (1 - item.product.discount_percentage / 100);
+        }
       }
       
       return sum + price * item.quantity;
@@ -219,6 +232,8 @@ const Cart = () => {
               const imageUrl =
                 primaryImage?.image_url || item.product.product_images[0]?.image_url;
 
+              const flashSaleInfo = getFlashSalePrice(item.product.id);
+              
               return (
                 <CartItem
                   key={item.id}
@@ -234,6 +249,8 @@ const Cart = () => {
                   variantName={item.product_variants?.variant_name}
                   priceAdjustment={item.product_variants?.price_adjustment || 0}
                   variantStockQuantity={item.product_variants?.stock_quantity}
+                  flashSalePrice={flashSaleInfo.isFlashSale ? flashSaleInfo.flashPrice : undefined}
+                  flashSaleOriginalPrice={flashSaleInfo.isFlashSale ? flashSaleInfo.originalPrice : undefined}
                   onUpdateQuantity={handleUpdateQuantity}
                   onRemove={handleRemoveItem}
                 />
