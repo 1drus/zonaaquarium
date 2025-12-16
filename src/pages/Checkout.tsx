@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useFlashSale } from '@/hooks/useFlashSale';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -81,6 +82,7 @@ export default function Checkout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { getFlashSalePrice, activeFlashSale } = useFlashSale();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -276,16 +278,29 @@ export default function Checkout() {
 
   const calculateSubtotal = () => {
     return cartItems.reduce((sum, item) => {
-      let price = item.products.price;
+      // Check for flash sale price
+      const flashSaleInfo = getFlashSalePrice(item.product_id);
       
-      // Add variant price adjustment if applicable
-      if (item.product_variants?.price_adjustment) {
-        price += item.product_variants.price_adjustment;
+      let price: number;
+      if (flashSaleInfo.isFlashSale && flashSaleInfo.flashPrice) {
+        // Use flash sale price
+        price = flashSaleInfo.flashPrice;
+        // Add variant price adjustment if applicable
+        if (item.product_variants?.price_adjustment) {
+          price += item.product_variants.price_adjustment;
+        }
+      } else {
+        price = item.products.price;
+        // Add variant price adjustment if applicable
+        if (item.product_variants?.price_adjustment) {
+          price += item.product_variants.price_adjustment;
+        }
+        // Apply product discount
+        const discount = item.products.discount_percentage || 0;
+        price = price - (price * discount / 100);
       }
       
-      const discount = item.products.discount_percentage || 0;
-      const finalPrice = price - (price * discount / 100);
-      return sum + (finalPrice * item.quantity);
+      return sum + (price * item.quantity);
     }, 0);
   };
 
@@ -441,15 +456,35 @@ export default function Checkout() {
 
       // Create order items
       const orderItems = cartItems.map(item => {
-        let price = item.products.price;
+        // Check for flash sale price
+        const flashSaleInfo = getFlashSalePrice(item.product_id);
         
-        // Add variant price adjustment if applicable
-        if (item.product_variants?.price_adjustment) {
-          price += item.product_variants.price_adjustment;
+        let price: number;
+        let finalPrice: number;
+        let discountPercentage: number | null = null;
+        
+        if (flashSaleInfo.isFlashSale && flashSaleInfo.flashPrice) {
+          // Use flash sale price
+          price = flashSaleInfo.originalPrice || item.products.price;
+          finalPrice = flashSaleInfo.flashPrice;
+          // Add variant price adjustment if applicable
+          if (item.product_variants?.price_adjustment) {
+            price += item.product_variants.price_adjustment;
+            finalPrice += item.product_variants.price_adjustment;
+          }
+          // Calculate effective discount percentage for display
+          discountPercentage = Math.round((1 - finalPrice / price) * 100);
+        } else {
+          price = item.products.price;
+          // Add variant price adjustment if applicable
+          if (item.product_variants?.price_adjustment) {
+            price += item.product_variants.price_adjustment;
+          }
+          discountPercentage = item.products.discount_percentage;
+          const discount = discountPercentage || 0;
+          finalPrice = price - (price * discount / 100);
         }
         
-        const discount = item.products.discount_percentage || 0;
-        const finalPrice = price - (price * discount / 100);
         const primaryImage = item.products.product_images.find(img => img.is_primary)?.image_url || null;
 
         return {
@@ -461,8 +496,8 @@ export default function Checkout() {
           product_name: item.products.name,
           product_slug: item.products.slug,
           product_image_url: primaryImage,
-          price: price,
-          discount_percentage: item.products.discount_percentage,
+          price: finalPrice, // Store final price (flash sale or discounted)
+          discount_percentage: discountPercentage,
           quantity: item.quantity,
           subtotal: finalPrice * item.quantity,
         };
@@ -483,16 +518,27 @@ export default function Checkout() {
 
       // Create Midtrans transaction
       const items = cartItems.map(item => {
-        let price = item.products.price;
-        if (item.product_variants?.price_adjustment) {
-          price += item.product_variants.price_adjustment;
+        // Check for flash sale price
+        const flashSaleInfo = getFlashSalePrice(item.product_id);
+        
+        let finalPrice: number;
+        if (flashSaleInfo.isFlashSale && flashSaleInfo.flashPrice) {
+          finalPrice = flashSaleInfo.flashPrice;
+          if (item.product_variants?.price_adjustment) {
+            finalPrice += item.product_variants.price_adjustment;
+          }
+        } else {
+          let price = item.products.price;
+          if (item.product_variants?.price_adjustment) {
+            price += item.product_variants.price_adjustment;
+          }
+          const discount = item.products.discount_percentage || 0;
+          finalPrice = price - (price * discount / 100);
         }
-        const discount = item.products.discount_percentage || 0;
-        const finalPrice = price - (price * discount / 100);
 
         return {
           id: item.product_id,
-          name: item.products.name,
+          name: item.products.name + (flashSaleInfo.isFlashSale ? ' ⚡' : ''),
           price: finalPrice,
           quantity: item.quantity,
         };
@@ -736,6 +782,7 @@ export default function Checkout() {
                 voucherDiscount={calculateVoucherDiscount(calculateSubtotal())}
                 voucherCode={appliedVoucher?.code}
                 tierConfig={tierConfig}
+                getFlashSalePrice={getFlashSalePrice}
               />
             )}
           </div>
